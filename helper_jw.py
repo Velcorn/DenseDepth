@@ -5,11 +5,17 @@ import numpy as np
 
 # Resizes images in path to 640x320
 def resize_640(path):
-    items = os.listdir(path)
-    for item in items:
-        img = Image.open(f'{path}/{item}')
-        imgr = img.resize((640, 480), Image.ANTIALIAS)
-        imgr.save(f'{path}/{item}', 'JPEG', quality=100)
+    dirs = os.listdir(path)
+    counter = 0
+    for d in dirs:
+        for sd in d:
+            for item in sd:
+                if counter % 1000 == 0:
+                    print(f"Resized {counter} images")
+                img = Image.open(f'{path}/{item}')
+                imgr = img.resize((640, 480), Image.ANTIALIAS)
+                imgr.save(f'{path}/{item}', 'JPEG', quality=100)
+                counter += 1
 
 
 # Resizes images in path to 320x240
@@ -49,4 +55,6 @@ def brightness(img, factor):
 
 img1 = np.asarray(Image.open("frame0000_1.jpg"))
 img2 = np.asarray(Image.open("frame0000_2.jpg"))
-print(mse(img1, img2))
+# print(mse(img1, img2))
+
+print(resize_640("chalearn-input"))

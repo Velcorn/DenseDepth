@@ -23,7 +23,7 @@ from matplotlib import pyplot as plt
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
 parser.add_argument('--model', default='nyu.h5', type=str, help='Trained Keras model file.')
-parser.add_argument('--input', default='chalearn-input/*.jpg', type=str, help='Input filename or folder.')
+parser.add_argument('--input', default='chalearn-input/*/*/*.jpg', type=str, help='Input filename or folder.')
 args = parser.parse_args()
 
 # Custom object needed for inference and training

@@ -5,3 +5,7 @@
 /.vscode
 *.jpg
 *.obj
+/chalearn-input
+/chalearn-output
+frame0000_1.jpg
+frame0000_2.jpg
