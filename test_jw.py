@@ -3,7 +3,7 @@ import glob
 import os
 import tensorflow as tf
 import numpy as np
-from helper_jw import resize_640, resize_320, get_names, np2img, brightness
+from helper_jw import np2img, brightness
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -23,7 +23,7 @@ from matplotlib import pyplot as plt
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
 parser.add_argument('--model', default='nyu.h5', type=str, help='Trained Keras model file.')
-parser.add_argument('--input', default='chalearn-input/*/*/*.jpg', type=str, help='Input filename or folder.')
+parser.add_argument('--input', default='chalearn-input/*/*/*/*.jpg', type=str, help='Input filename or folder.')
 args = parser.parse_args()
 
 # Custom object needed for inference and training
@@ -33,9 +33,6 @@ print('Loading model...')
 # Load model into GPU / CPU
 model = load_model(args.model, custom_objects=custom_objects, compile=False)
 print('\nModel loaded ({0}).'.format(args.model))
-
-# Resize images first
-resize_640("chalearn-input")
 
 # Input images
 inputs = load_images(glob.glob(args.input))
@@ -57,7 +54,7 @@ plt.show()
 '''
 
 # Save results
-names = get_names("chalearn-input")
+names = glob.glob("chalearn-input/*/*/*/*.jpg")
 plasma = plt.get_cmap('plasma')
 for i, item in enumerate(outputs.copy()):
     '''a = item[:, :, 0]
@@ -69,9 +66,12 @@ for i, item in enumerate(outputs.copy()):
     # Convert from np array to image
     img = np2img(np.uint8(img*255))
     # Brighten image
-    # img = brightness(img, 2)
+    img = brightness(img, 1.5)
+    # Get path to image and name.
+    path = "/".join(names[i].replace("input", "output").split("\\")[:4])
+    name = names[i].split("\\")[4:][0]
+    # Create dirs if not existing
+    if not os.path.exists(path):
+        os.makedirs(path)
     # Save image
-    img.save(f'chalearn-output/{names[i]}', 'JPEG', quality=100)
-
-# Resize images back to original resolution
-resize_320("chalearn-output")
+    img.save(f"{path}/{name}", "JPEG", quality=90)

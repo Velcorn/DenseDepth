@@ -1,36 +1,23 @@
-import os
+import glob
 from PIL import Image, ImageEnhance
 import numpy as np
+from tqdm import tqdm
 
 
-# Resizes images in path to 640x320
-def resize_640(path):
-    dirs = os.listdir(path)
-    counter = 0
-    for d in dirs:
-        for sd in d:
-            for item in sd:
-                if counter % 1000 == 0:
-                    print(f"Resized {counter} images")
-                img = Image.open(f'{path}/{item}')
-                imgr = img.resize((640, 480), Image.ANTIALIAS)
-                imgr.save(f'{path}/{item}', 'JPEG', quality=100)
-                counter += 1
+# Resizes images in path to 480/360
+def resize_480(path):
+    for item in tqdm(glob.glob(f"{path}/*/*/*/*.jpg")):
+        img = Image.open(item)
+        imgr = img.resize((480, 360), Image.ANTIALIAS)
+        imgr.save(item, "JPEG", quality=90)
 
 
 # Resizes images in path to 320x240
-def resize_320(path):
-    items = os.listdir(path)
-    for item in items:
-        img = Image.open(f'{path}/{item}')
+def resize_32(path):
+    for item in tqdm(glob.glob(f"{path}/*/*/*/*.jpg")):
+        img = Image.open(item)
         imgr = img.resize((320, 240), Image.ANTIALIAS)
-        imgr.save(f'{path}/{item}', 'JPEG', quality=100)
-
-
-# Gets filenames of items in path
-def get_names(path):
-    names = os.listdir(path)
-    return names
+        imgr.save(item, "JPEG", quality=90)
 
 
 # Convert numpy array to image and save it
@@ -57,4 +44,5 @@ img1 = np.asarray(Image.open("frame0000_1.jpg"))
 img2 = np.asarray(Image.open("frame0000_2.jpg"))
 # print(mse(img1, img2))
 
-print(resize_640("chalearn-input"))
+print(resize_480("chalearn-input"))
+# print(resize_320("chalearn-input"))
