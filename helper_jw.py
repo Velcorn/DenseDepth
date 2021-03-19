@@ -1,8 +1,8 @@
 from tqdm import tqdm
 from process_jw import process_images
 
-# current batch, total batches, left and right "borders" for input
-b = 186
+# Current batch, total number of batches, left and right "borders" for batch
+b = 193
 bn = 2252
 l = (b-1) * 740
 r = b * 740
