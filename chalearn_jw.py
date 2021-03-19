@@ -1,10 +1,14 @@
 import argparse
 import glob
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-import tensorflow as tf
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import tensorflow as tf
+from keras.models import load_model
+from layers import BilinearUpSampling2D
+from utils_jw import predict, load_images, to_multichannel, resize_640, np2img, brightness
 
 gpus = tf.config.experimental.list_physical_devices("GPU")
 if gpus:
@@ -14,10 +18,6 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-# Keras/TensorFlow
-from keras.models import load_model
-from layers import BilinearUpSampling2D
-from utils_jw import predict, load_images, display_images, to_multichannel, resize_640, np2img, brightness
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
@@ -35,12 +35,18 @@ if resize:
 else:
     print("\nSkipping resizing of images...")
 
+# Load model into GPU/CPU
+model = load_model(args.model, custom_objects=custom_objects, compile=False)
+print(f"\nModel loaded {args.model}.")
 
-def process_images(b, bn, l, r):
+# Current batch, batch size, total number of batches, left and right "borders" for batch
+b = 329
+bs = 740
+bn = 2252
+l = (b-1) * bs
+r = b * bs
+for i in tqdm(range(bn-b+1)):
     print(f"\nProcessing batch {b} of {bn}...")
-
-    # Load model into GPU/CPU
-    model = load_model(args.model, custom_objects=custom_objects, compile=False)
 
     # Load images into memory
     print("\nLoading images into memory...")
@@ -50,21 +56,18 @@ def process_images(b, bn, l, r):
 
     # Compute results
     outputs = predict(model, inputs)
+    # Free up RAM by clearing inputs
+    inputs = None
 
     # Save results as JPEG to output folder
-    # plasma = plt.get_cmap('plasma')
     for i, item in enumerate(outputs.copy()):
-        '''a = item[:, :, 0]
-        a -= np.min(a)
-        a /= np.max(a)
-        a = plasma(a)[:, :, :3]'''
         # Convert output to multichannel
         img = to_multichannel(item)
         # Convert from np array to image
         img = np2img(np.uint8(img*255))
         # Brighten image
         # img = brightness(img, 1.5)
-        # Get path to image and name.
+        # Get path to image and name
         path = "/".join(names[i].replace("input", "output").split("\\")[:4])
         name = names[i].split("\\")[4:][0]
         # Create dirs if not existing
@@ -74,4 +77,10 @@ def process_images(b, bn, l, r):
         img = img.resize((320, 240), Image.ANTIALIAS)
         # Save image
         img.save(f"{path}/{name}", "JPEG", quality=90)
+
+    # Increment variables
+    b += 1
+    l += bs
+    r += bs
+
     print("Finished batch!\n")
