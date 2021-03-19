@@ -181,3 +181,13 @@ def brightness(img, factor):
     enhancer = ImageEnhance.Brightness(img)
     enhanced_img = enhancer.enhance(factor)
     return enhanced_img
+
+
+# Leftover code -> save for later maybe
+'''
+plasma = plt.get_cmap('plasma')
+a = item[:, :, 0]
+a -= np.min(a)
+a /= np.max(a)
+a = plasma(a)[:, :, :3]
+'''

@@ -2,7 +2,7 @@ from tqdm import tqdm
 from chalearn_jw import process_images
 
 # Current batch, batch size, total number of batches, left and right "borders" for batch
-b = 321
+b = 331
 bs = 740
 bn = 2252
 l = (b-1) * bs
@@ -12,7 +12,7 @@ for i in tqdm(range(bn-b+1)):
     b += 1
     l += bs
     r += bs
-print("\n\n!!!All done!!!")
+print("\n\nAll done!!!")
 
 
 # Leftover code -> save for later maybe

@@ -40,7 +40,7 @@ model = load_model(args.model, custom_objects=custom_objects, compile=False)
 print(f"\nModel loaded {args.model}.")
 
 # Current batch, batch size, total number of batches, left and right "borders" for batch
-b = 329
+b = 333
 bs = 740
 bn = 2252
 l = (b-1) * bs
@@ -84,3 +84,5 @@ for i in tqdm(range(bn-b+1)):
     r += bs
 
     print("Finished batch!\n")
+
+print("\nAll done!!!")
