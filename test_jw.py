@@ -4,8 +4,6 @@ import os
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-from tqdm import tqdm
-import sys
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -38,41 +36,26 @@ if resize:
 else:
     print("Skipping resizing of images...")
 
-# Load model into GPU/CPU
-print('Loading model...')
-model = load_model(args.model, custom_objects=custom_objects, compile=False)
-print('\nModel loaded ({0}).'.format(args.model))
 
-l = 0
-r = 1126
-batch = 1
-length = len(glob.glob(args.input))
-batch_nr = length//r
-for i in tqdm(range(batch_nr)):
-    print(f"Processing batch {batch} of {batch_nr}")
-    # Get input images that aren't processed already
-    imgs = [x for x in glob.glob(args.input)[l:r] if not os.path.exists(x.replace("input", "output"))]
+def process_images(b, bn, l, r):
+    print(f"\nProcessing batch {b} of {bn}")
 
-    # Increase variables here for readability
-    l += r
-    r += r
-    batch += 1
+    # Load model into GPU/CPU
+    model = load_model(args.model, custom_objects=custom_objects, compile=False)
+    print('\nModel loaded ({0}).'.format(args.model))
 
-    # If imgs already processed, go to next batch.
-    if imgs:
-        print("\nLoading images into memory...")
-        inputs = load_images(imgs)
-    else:
-        continue
-    print('\nLoaded ({0}) images of size {1}.'.format(inputs.shape[0], inputs.shape[1:]))
+    # Load images into memory
+    print("\nLoading images into memory...")
+    names = glob.glob(args.input)[l:r]
+    inputs = load_images(names)
+    print('Loaded ({0}) images of size {1}.'.format(inputs.shape[0], inputs.shape[1:]))
 
     # Compute results
     outputs = predict(model, inputs)
 
     # Save results as JPEG to output folder
-    names = glob.glob("chalearn-input/*/*/*/*.jpg")
     # plasma = plt.get_cmap('plasma')
-    for i, item in tqdm(enumerate(outputs.copy())):
+    for i, item in enumerate(outputs.copy()):
         '''a = item[:, :, 0]
         a -= np.min(a)
         a /= np.max(a)
@@ -93,6 +76,4 @@ for i in tqdm(range(batch_nr)):
         img = img.resize((320, 240), Image.ANTIALIAS)
         # Save image
         img.save(f"{path}/{name}", "JPEG", quality=90)
-
-    print("\nFinished batch!\n")
-print("Finished all!!!")
+    return "\nFinished batch!\n"
