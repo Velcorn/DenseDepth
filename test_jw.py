@@ -3,6 +3,8 @@ import glob
 import os
 import tensorflow as tf
 import numpy as np
+from PIL import Image
+from tqdm import tqdm
 from helper_jw import np2img, brightness
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -56,7 +58,7 @@ plt.show()
 # Save results
 names = glob.glob("chalearn-input/*/*/*/*.jpg")
 plasma = plt.get_cmap('plasma')
-for i, item in enumerate(outputs.copy()):
+for i, item in tqdm(enumerate(outputs.copy())):
     '''a = item[:, :, 0]
     a -= np.min(a)
     a /= np.max(a)
@@ -73,5 +75,7 @@ for i, item in enumerate(outputs.copy()):
     # Create dirs if not existing
     if not os.path.exists(path):
         os.makedirs(path)
+    # Resize image
+    img = img.resize((320, 240), Image.ANTIALIAS)
     # Save image
     img.save(f"{path}/{name}", "JPEG", quality=90)
