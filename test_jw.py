@@ -42,10 +42,10 @@ def process_images(b, bn, l, r):
 
     # Load model into GPU/CPU
     model = load_model(args.model, custom_objects=custom_objects, compile=False)
-    print('\nModel loaded ({0}).'.format(args.model))
+    print('Model loaded ({0}).'.format(args.model))
 
     # Load images into memory
-    print("\nLoading images into memory...")
+    print("Loading images into memory...")
     names = glob.glob(args.input)[l:r]
     inputs = load_images(names)
     print('Loaded ({0}) images of size {1}.'.format(inputs.shape[0], inputs.shape[1:]))
@@ -76,4 +76,4 @@ def process_images(b, bn, l, r):
         img = img.resize((320, 240), Image.ANTIALIAS)
         # Save image
         img.save(f"{path}/{name}", "JPEG", quality=90)
-    return "\nFinished batch!\n"
+    return "Finished batch!\n"

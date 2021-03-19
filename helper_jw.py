@@ -13,8 +13,9 @@ for i in range(bn):
     l += 740
     r += 740
     end = timeit.default_timer()
-    time = (start-end) // 60
+    time = (end-start) / 60
     est_m = time * (bn-b)
-    print(f"\nTime taken for batch: {time} mins")
-    print(f"\nEstimated remaining time: {est_m // 60} hours, {est_m % 60} mins")
+    print(f"\nTime taken for batch: {int(time)} min(s)")
+    print(f"Estimated remaining time: "
+          f"{int(est_m / 60)}:{int(est_m % 60) if int(est_m % 60) > 10 else f'0{int(est_m % 60)}'} hrs:min")
 print("Finished all!")
