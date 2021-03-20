@@ -1,3 +1,7 @@
+"""
+No longer needed, I guess. Keeping it here for reference.
+"""
+
 from tqdm import tqdm
 from chalearn_jw import process_images
 

@@ -1,14 +1,22 @@
+"""
+Modified test.py to batch-wise process Chalearn RGB frames to pseudo-depth for SLR.
+
+Jan Willruth
+"""
+
 import argparse
 import glob
 import os
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
+import gc
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
 from keras.models import load_model
 from layers import BilinearUpSampling2D
 from utils_jw import predict, load_images, to_multichannel, resize_640, np2img, brightness
+
 
 gpus = tf.config.experimental.list_physical_devices("GPU")
 if gpus:
@@ -40,24 +48,23 @@ model = load_model(args.model, custom_objects=custom_objects, compile=False)
 print(f"\nModel loaded {args.model}.")
 
 # Current batch, batch size, total number of batches, left and right "borders" for batch
-b = 333
-bs = 740
-bn = 2252
-l = (b-1) * bs
-r = b * bs
-for i in tqdm(range(bn-b+1)):
-    print(f"\nProcessing batch {b} of {bn}...")
+# NOTE: batch size of 296 with batch number of 5630 seemed to be the sweet spot on my machine, results may vary greatly
+current_batch = 2229
+batch_size = 296
+batch_number = 5630
+l = (current_batch - 1) * batch_size
+r = current_batch * batch_size
+for i in tqdm(range(batch_number - current_batch + 1)):
+    print(f"\nProcessing batch {current_batch} of {batch_number}...\n")
 
     # Load images into memory
-    print("\nLoading images into memory...")
+    print("Loading images into memory...")
     names = glob.glob(args.input)[l:r]
     inputs = load_images(names)
     print(f"Loaded {inputs.shape[0]} images of size {inputs.shape[1:]}.")
 
     # Compute results
     outputs = predict(model, inputs)
-    # Free up RAM by clearing inputs
-    inputs = None
 
     # Save results as JPEG to output folder
     for i, item in enumerate(outputs.copy()):
@@ -79,10 +86,13 @@ for i in tqdm(range(bn-b+1)):
         img.save(f"{path}/{name}", "JPEG", quality=90)
 
     # Increment variables
-    b += 1
-    l += bs
-    r += bs
+    current_batch += 1
+    l += batch_size
+    r += batch_size
 
-    print("Finished batch!\n")
+    # Manually invoke garbage collector to free RAM for next iteration
+    gc.collect()
+
+    print("\nFinished batch!\n")
 
 print("\nAll done!!!")

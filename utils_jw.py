@@ -1,3 +1,9 @@
+"""
+Added some utils used for chalearn_jw.py
+
+Jan Willruth
+"""
+
 import glob
 from PIL import Image, ImageEnhance
 import numpy as np
