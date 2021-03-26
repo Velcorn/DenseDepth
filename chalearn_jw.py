@@ -9,6 +9,7 @@ import glob
 import os
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
 import gc
@@ -71,7 +72,7 @@ current_batch = 1
 batch_size = 296
 # Calculate batch number based on number of images to process.
 if num_of_images % batch_size == 0:
-    batch_number = num_of_images / batch_size
+    batch_number = num_of_images // batch_size
 else:
     batch_number = num_of_images // batch_size + 1
 l = (current_batch - 1) * batch_size
@@ -93,13 +94,18 @@ for i in tqdm(range(batch_number - current_batch + 1)):
     outputs = predict(model, inputs)
 
     # Save results as JPEG to output folder
+    plasma = plt.get_cmap('plasma')
     for i, item in enumerate(outputs.copy()):
+        img = item[:, :, 0]
+        img -= np.min(img)
+        img /= np.max(img)
+        img = plasma(img)[:, :, :3]
         # Convert output to multichannel
-        img = to_multichannel(item)
+        # img = to_multichannel(item)
         # Convert from np array to image
         img = np2img(np.uint8(img * 255))
         # Brighten image
-        # img = brightness(img, 1.5)
+        # img = brightness(img, 2)
         # Get path to image and name
         path = "/".join(names[i].replace("input", "output").split("\\")[:4])
         name = names[i].split("\\")[4:][0]
