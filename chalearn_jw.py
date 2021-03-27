@@ -54,6 +54,7 @@ for i in chalearn_input:
     if i.replace("input", "output") not in chalearn_output:
         to_process.append(i)
 num_of_images = len(to_process)
+remaining = num_of_images
 
 # Exit program if no images to process, else continue
 if not to_process:
@@ -84,8 +85,8 @@ for i in tqdm(range(batch_number - current_batch + 1)):
     print("Loading images into memory...")
 
     # Update right border if number of remaining images is smaller than batch size
-    if len(to_process[l:]) < r:
-        r = len(to_process[l:])
+    if remaining < batch_size:
+        r = l + remaining
     names = to_process[l:r]
     inputs = load_images(names)
     print(f"Loaded {inputs.shape[0]} images of size {inputs.shape[1:]}.")
@@ -117,10 +118,11 @@ for i in tqdm(range(batch_number - current_batch + 1)):
         # Save image
         img.save(f"{path}/{name}", "JPEG", quality=90)
 
-    # Increment variables
+    # Update variables
     current_batch += 1
     l += batch_size
     r += batch_size
+    remaining -= batch_size
 
     # Manually invoke garbage collector to free RAM for next iteration
     gc.collect()
