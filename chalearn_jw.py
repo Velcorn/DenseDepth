@@ -9,7 +9,6 @@ import glob
 import os
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
 import gc
@@ -20,13 +19,20 @@ from keras.models import load_model
 from layers import BilinearUpSampling2D
 from utils_jw import predict, load_images, to_multichannel, resize_640, np2img, brightness
 
-gpus = tf.config.experimental.list_physical_devices("GPU")
+total_memory = 8192
+frac = 0.8
+limit = int(total_memory * frac)
+gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
+        tf.config.experimental.set_virtual_device_configuration(
+            gpus[0],
+            [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=limit)])
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
     except RuntimeError as e:
         print(e)
+
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
@@ -95,24 +101,18 @@ for i in tqdm(range(batch_number - current_batch + 1)):
     outputs = predict(model, inputs)
 
     # Save results as JPEG to output folder
-    plasma = plt.get_cmap('plasma')
     for i, item in enumerate(outputs.copy()):
-        img = item[:, :, 0]
-        img -= np.min(img)
-        img /= np.max(img)
-        img = plasma(img)[:, :, :3]
         # Convert output to multichannel
-        # img = to_multichannel(item)
+        img = to_multichannel(item)
         # Convert from np array to image
-        img = np2img(np.uint8(img * 255))
+        img = np2img(np.uint8(img*255))
         # Brighten image
         # img = brightness(img, 2)
         # Get path to image and name
         path = "/".join(names[i].replace("input", "output").split("\\")[:4])
         name = names[i].split("\\")[4:][0]
-        # Create dirs if not existing
-        if not os.path.exists(path):
-            os.makedirs(path)
+        # Create dir
+        os.makedirs(path, exist_ok=True)
         # Resize image
         img = img.resize((320, 240), Image.ANTIALIAS)
         # Save image
