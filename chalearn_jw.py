@@ -22,16 +22,9 @@ from utils_jw import predict, load_images, to_multichannel, resize_640, np2img, 
 total_memory = 8192
 frac = 0.8
 limit = int(total_memory * frac)
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        tf.config.experimental.set_virtual_device_configuration(
-            gpus[0],
-            [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=limit)])
-        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    except RuntimeError as e:
-        print(e)
+for gpu in tf.config.list_physical_devices('GPU'):
+    tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(
+        memory_limit=limit)])
 
 
 # Argument Parser
