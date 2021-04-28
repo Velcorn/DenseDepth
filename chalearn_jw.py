@@ -50,7 +50,8 @@ chalearn_input = glob.glob(args.input)
 chalearn_output = {x: 0 for x in glob.glob(args.output)}
 to_process = []
 for i in chalearn_input:
-    if i.replace("input", "output") not in chalearn_output:
+    img = i.replace("input", "output").replace(".jpg", ".png")
+    if img not in chalearn_output:
         to_process.append(i)
 num_of_images = len(to_process)
 remaining = num_of_images
@@ -97,7 +98,7 @@ for i in tqdm(range(batch_number - current_batch + 1)):
     for j, item in enumerate(outputs.copy()):
         img = item*1000
         # Convert output to multichannel
-        # img = to_multichannel(item*255)
+        # img = to_multichannel(item*1000)
         # Get path to image and name
         path = "/".join(names[j].replace("input", "output").split("\\")[:4])
         name = names[j].split("\\")[4:][0][:-4]
