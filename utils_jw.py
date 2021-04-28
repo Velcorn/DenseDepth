@@ -16,8 +16,10 @@ def DepthNorm(x, maxDepth):
 
 def predict(model, images, minDepth=10, maxDepth=1000, batch_size=2):
     # Support multiple RGBs, one RGB image, even grayscale 
-    if len(images.shape) < 3: images = np.stack((images, images, images), axis=2)
-    if len(images.shape) < 4: images = images.reshape((1, images.shape[0], images.shape[1], images.shape[2]))
+    if len(images.shape) < 3:
+        images = np.stack((images, images, images), axis=2)
+    if len(images.shape) < 4:
+        images = images.reshape((1, images.shape[0], images.shape[1], images.shape[2]))
     # Compute predictions
     predictions = model.predict(images, batch_size=batch_size)
     # Put in expected range
@@ -45,7 +47,8 @@ def load_images(image_files):
 
 
 def to_multichannel(i):
-    if i.shape[2] == 3: return i
+    if i.shape[2] == 3:
+        return i
     i = i[:, :, 0]
     return np.stack((i, i, i), axis=2)
 
@@ -99,7 +102,6 @@ def save_images(filename, outputs, inputs=None, gt=None, is_colormap=True, is_re
 
 def load_test_data(test_data_zip_file='nyu_test.zip'):
     print('Loading test data...', end='')
-    import numpy as np
     from data import extract_zip
     data = extract_zip(test_data_zip_file)
     from io import BytesIO
@@ -131,16 +133,16 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False):
     testSetDepths = []
 
     for i in range(N // bs):
-        x = rgb[(i) * bs:(i + 1) * bs, :, :, :]
+        x = rgb[i * bs:(i + 1) * bs, :, :, :]
 
         # Compute results
-        true_y = depth[(i) * bs:(i + 1) * bs, :, :]
+        true_y = depth[i * bs:(i + 1) * bs, :, :]
         pred_y = scale_up(2, predict(model, x / 255, minDepth=10, maxDepth=1000, batch_size=bs)[:, :, :, 0]) * 10.0
 
         # Test time augmentation: mirror image estimate
         pred_y_flip = scale_up(2,
-                               predict(model, x[..., ::-1, :] / 255, minDepth=10, maxDepth=1000, batch_size=bs)[:, :, :,
-                               0]) * 10.0
+                               predict(model, x[..., ::-1, :] / 255, minDepth=10, maxDepth=1000, batch_size=bs)
+                               [:, :, :, 0]) * 10.0
 
         # Crop based on Eigen et al. crop
         true_y = true_y[:, crop[0]:crop[1] + 1, crop[2]:crop[3] + 1]
@@ -174,12 +176,6 @@ def resize_640(path):
         imgr = img.resize((640, 480), Image.ANTIALIAS)
         imgr.save(item, "JPEG", quality=90)
     return "Finished resizing images!"
-
-
-# Convert numpy array to image
-def np2img(array):
-    img = Image.fromarray(array)
-    return img
 
 
 # Alter brightness of an image
