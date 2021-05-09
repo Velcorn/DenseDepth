@@ -174,7 +174,7 @@ def resize_640(path):
         if img.size[0] == 640:
             continue
         imgr = img.resize((640, 480), Image.ANTIALIAS)
-        imgr.save(item, "JPEG", quality=90)
+        imgr.save(item, "JPEG")
     return "Finished resizing images!"
 
 

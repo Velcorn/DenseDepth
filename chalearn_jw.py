@@ -5,20 +5,21 @@ Jan Willruth
 """
 
 import argparse
+import cv2
+import gc
 import glob
 import os
 import sys
-
-import cv2
+import numpy as np
 from tqdm import tqdm
-import gc
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
 from keras.models import load_model
 from layers import BilinearUpSampling2D
-from utils_jw import predict, load_images, to_multichannel, resize_640, brightness
+from utils_jw import predict, load_images, resize_640, brightness
 
+# JW: Limit memory usage to a fraction of total GPU memory.
 total_memory = 8000
 frac = 0.8
 limit = int(total_memory * frac)
@@ -38,7 +39,7 @@ args = parser.parse_args()
 custom_objects = {"BilinearUpSampling2D": BilinearUpSampling2D, "depth_loss_function": None}
 
 # Resize images if resize boolean True.
-resize = False
+resize = True
 if resize:
     print(resize_640("chalearn-input"))
 else:
@@ -96,18 +97,17 @@ for i in tqdm(range(batch_number - current_batch + 1)):
 
     # Save results as to output folder
     for j, item in enumerate(outputs.copy()):
-        img = item*1000
-        # Convert output to multichannel
-        # img = to_multichannel(item*1000)
+        # Normalize image to 0-255 range
+        img = 255 * ((item - np.min(item)) / np.ptp(item))
         # Get path to image and name
         path = "/".join(names[j].replace("input", "output").split("\\")[:4])
         name = names[j].split("\\")[4:][0][:-4]
         # Create dir
         os.makedirs(path, exist_ok=True)
         # Resize image
-        cv2.resize(img, (320, 240))
+        imgr = cv2.resize(img, (320, 240))
         # Save image
-        cv2.imwrite(f"{path}/{name}.png", img)
+        cv2.imwrite(f"{path}/{name}.png", imgr)
 
     # Update variables
     current_batch += 1
