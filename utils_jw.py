@@ -164,32 +164,3 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False):
         print("{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(e[0], e[1], e[2], e[3], e[4], e[5]))
 
     return e
-
-
-# Resizes images in path to 640x480
-def resize_640(path):
-    print("Resizing images to 640x480...")
-    for item in tqdm(glob.glob(f"{path}/*/*/*/*.jpg")):
-        img = Image.open(item)
-        if img.size[0] == 640:
-            continue
-        imgr = img.resize((640, 480), Image.ANTIALIAS)
-        imgr.save(item, "JPEG")
-    return "Finished resizing images!"
-
-
-# Alter brightness of an image
-def brightness(img, factor):
-    enhancer = ImageEnhance.Brightness(img)
-    enhanced_img = enhancer.enhance(factor)
-    return enhanced_img
-
-
-# Leftover code -> save for later maybe
-'''
-plasma = plt.get_cmap('plasma')
-a = item[:, :, 0]
-a -= np.min(a)
-a /= np.max(a)
-a = plasma(a)[:, :, :3]
-'''
