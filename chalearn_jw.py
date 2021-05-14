@@ -48,7 +48,7 @@ def estimate_depth():
 
     # Exit program if no images to process, else continue
     if not to_process:
-        return f"No images need to be processed, exiting..."
+        return "No images need to be processed, exiting..."
     print(f"{num_of_images} images need to be processed, proceeding...")
 
     # Load model into GPU/CPU
@@ -110,8 +110,11 @@ def estimate_depth():
 
 
 def normalize():
-    print("Getting min-max across all arrays...")
     names = glob.glob(args.output)
+    if not names:
+        return "No .npy files to normalize, exiting..."
+
+    print("Getting min-max across all arrays...")
     min = np.inf
     max = 0
     for arr in tqdm(names):
@@ -135,10 +138,10 @@ def normalize():
         # Save image
         cv2.imwrite(f"{path}/{name}.png", img)
 
-    print("Cleaning up...")
+    '''print("Cleaning up...")
     # Remove .npy files
-    for npy in names:
-        os.remove(npy)
+    for npy in tqdm(names):
+        os.remove(npy)'''
 
     return "All done!"
 
@@ -155,8 +158,8 @@ if __name__ == "__main__":
     # Argument Parser
     parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
     parser.add_argument("--model", default="nyu.h5", type=str, help="Trained Keras model file.")
-    parser.add_argument("--input", default="chalearn-input/*/*/*/*.*", type=str, help="Input folder.")
-    parser.add_argument("--output", default="chalearn-output/*/*/*/*.*", type=str, help="Output folder.")
+    parser.add_argument("--input", default="chalearn-input/*/*/*/*.jpg", type=str, help="Input folder.")
+    parser.add_argument("--output", default="chalearn-output/*/*/*/*.npy", type=str, help="Output folder.")
     args = parser.parse_args()
 
     # Custom objects needed for inference and training
