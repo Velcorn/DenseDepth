@@ -33,39 +33,14 @@ def resize_640(path):
     return "Finished resizing images!"
 
 
-if __name__ == "__main__":
-    # JW: Limit memory usage to a fraction of total GPU memory.
-    total_memory = 8000
-    frac = 0.8
-    limit = int(total_memory * frac)
-    for gpu in tf.config.list_physical_devices('GPU'):
-        tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(
-            memory_limit=limit)])
-
-    # Argument Parser
-    parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
-    parser.add_argument("--model", default="nyu.h5", type=str, help="Trained Keras model file.")
-    parser.add_argument("--input", default="chalearn-input/*/*/*/*.*", type=str, help="Input folder.")
-    parser.add_argument("--output", default="chalearn-output/*/*/*/*.*", type=str, help="Output folder.")
-    args = parser.parse_args()
-
-    # Custom object needed for inference and training
-    custom_objects = {"BilinearUpSampling2D": BilinearUpSampling2D, "depth_loss_function": None}
-
-    # Resize images if resize boolean True.
-    resize = False
-    if resize:
-        print(resize_640("chalearn-input"))
-    else:
-        print("Skipping resizing of images...")
-
+def estimate_depth():
     # Get images to process
     print("Getting images that need to be processed...")
     chalearn_input = glob.glob(args.input)
     chalearn_output = {x: 0 for x in glob.glob(args.output)}
     to_process = []
     for i in chalearn_input:
-        img = i.replace("input", "output")
+        img = i.replace("input", "output").replace("jpg", "npy")
         if img not in chalearn_output:
             to_process.append(i)
     num_of_images = len(to_process)
@@ -73,19 +48,18 @@ if __name__ == "__main__":
 
     # Exit program if no images to process, else continue
     if not to_process:
-        print(f"No images need to be processed, exiting...")
-        sys.exit()
+        return f"No images need to be processed, exiting..."
     print(f"{num_of_images} images need to be processed, proceeding...")
 
     # Load model into GPU/CPU
     model = load_model(args.model, custom_objects=custom_objects, compile=False)
-    print(f"\nModel loaded {args.model}.")
+    print(f"\nLoaded model {args.model}.")
 
     # Current batch, batch size, total number of batches, left and right "borders" for batch
-    # NOTE: a batch size of 296 with a batch number of 5630 seemed to be the sweet spot on my machine,
+    # NOTE: a batch size of about 300 images seemed to be the sweet spot on my machine,
     # results may vary greatly depending on your hardware specs!
     current_batch = 1
-    batch_size = 296
+    batch_size = 300
     # Calculate batch number based on number of images to process.
     if num_of_images % batch_size == 0:
         batch_number = num_of_images // batch_size
@@ -111,17 +85,15 @@ if __name__ == "__main__":
 
         # Save results as to output folder
         for j, item in enumerate(outputs.copy()):
-            # Normalize image to 0-255 range
-            img = 255 * ((item - np.min(item)) / np.ptp(item))
             # Get path to image and name
             path = "/".join(names[j].replace("input", "output").split("\\")[:4])
             name = names[j].split("\\")[4:][0][:-4]
             # Create dir
             os.makedirs(path, exist_ok=True)
             # Resize image
-            imgr = cv2.resize(img, (320, 240))
+            imgr = cv2.resize(item, (320, 240))
             # Save image
-            cv2.imwrite(f"{path}/{name}.jpg", imgr)
+            np.save(f"{path}/{name}", imgr)
 
         # Update variables
         current_batch += 1
@@ -134,4 +106,68 @@ if __name__ == "__main__":
 
         print("\nFinished batch!\n")
 
-    print("\nAll done!!!")
+    return "Finished all batches!"
+
+
+def normalize():
+    print("Getting min-max across all arrays...")
+    names = glob.glob(args.output)
+    min = np.inf
+    max = 0
+    for arr in tqdm(names):
+        arr = np.load(arr)
+        lmin = np.min(arr)
+        lmax = np.max(arr)
+        if lmin < min:
+            min = lmin
+        if lmax > max:
+            max = lmax
+
+    print("Normalizing and saving images...")
+    for k, arr in tqdm(enumerate(names)):
+        # Get path to image and name
+        path = "/".join(names[k].replace("input", "output").split("\\")[:4])
+        name = names[k].split("\\")[4:][0][:-4]
+        # Normalize image to 0-255 range according to formula
+        # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
+        arr = np.load(f"{path}/{name}.npy")
+        img = (255.0 * (arr - min) / (max - min)).astype(np.uint8)
+        # Save image
+        cv2.imwrite(f"{path}/{name}.png", img)
+
+    print("Cleaning up...")
+    # Remove .npy files
+    for npy in names:
+        os.remove(npy)
+
+    return "All done!"
+
+
+if __name__ == "__main__":
+    # JW: Limit memory usage to a fraction of total GPU memory.
+    total_memory = 8000
+    frac = 0.8
+    limit = int(total_memory * frac)
+    for gpu in tf.config.list_physical_devices('GPU'):
+        tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(
+            memory_limit=limit)])
+
+    # Argument Parser
+    parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
+    parser.add_argument("--model", default="nyu.h5", type=str, help="Trained Keras model file.")
+    parser.add_argument("--input", default="chalearn-input/*/*/*/*.*", type=str, help="Input folder.")
+    parser.add_argument("--output", default="chalearn-output/*/*/*/*.*", type=str, help="Output folder.")
+    args = parser.parse_args()
+
+    # Custom objects needed for inference and training
+    custom_objects = {"BilinearUpSampling2D": BilinearUpSampling2D, "depth_loss_function": None}
+
+    # Resize images if resize boolean True.
+    resize = False
+    if resize:
+        print(resize_640("chalearn-input"))
+    else:
+        print("Skipping resizing of images...")
+
+    estimate_depth()
+    normalize()
