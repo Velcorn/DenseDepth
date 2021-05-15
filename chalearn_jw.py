@@ -9,7 +9,6 @@ import cv2
 import gc
 import glob
 import os
-import sys
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
@@ -30,7 +29,7 @@ def resize_640(path):
             continue
         imgr = img.resize((640, 480), Image.ANTIALIAS)
         imgr.save(img, "JPEG")
-    return "Finished resizing images!"
+    print("Finished resizing images!")
 
 
 def estimate_depth():
@@ -40,7 +39,7 @@ def estimate_depth():
     chalearn_output = {x: 0 for x in glob.glob(args.output)}
     to_process = []
     for i in chalearn_input:
-        img = i.replace("input", "output").replace("jpg", "npy")
+        img = i.replace("input", "output").replace("jpg", "png")
         if img not in chalearn_output:
             to_process.append(i)
     num_of_images = len(to_process)
@@ -48,7 +47,7 @@ def estimate_depth():
 
     # Exit program if no images to process, else continue
     if not to_process:
-        return "No images need to be processed, exiting..."
+        return "No images need to be processed, skipping..."
     print(f"{num_of_images} images need to be processed, proceeding...")
 
     # Load model into GPU/CPU
@@ -56,10 +55,10 @@ def estimate_depth():
     print(f"\nLoaded model {args.model}.")
 
     # Current batch, batch size, total number of batches, left and right "borders" for batch
-    # NOTE: a batch size of about 300 images seemed to be the sweet spot on my machine,
-    # results may vary greatly depending on your hardware specs!
+    # NOTE: a batch size of about 300-400 images seemed to be the sweet spot on my machine;
+    # results may vary greatly depending on your hardware specifications!
     current_batch = 1
-    batch_size = 300
+    batch_size = 400
     # Calculate batch number based on number of images to process.
     if num_of_images % batch_size == 0:
         batch_number = num_of_images // batch_size
@@ -91,9 +90,11 @@ def estimate_depth():
             # Create dir
             os.makedirs(path, exist_ok=True)
             # Resize image
-            imgr = cv2.resize(item, (320, 240))
+            img = cv2.resize(item, (320, 240))
+            # Multiply by 10000 to retain more accuracy, but keep filesize down
+            img = (img*10000).astype(np.uint16)
             # Save image
-            np.save(f"{path}/{name}", imgr)
+            cv2.imwrite(f"{path}/{name}.png", img)
 
         # Update variables
         current_batch += 1
@@ -110,40 +111,58 @@ def estimate_depth():
 
 
 def normalize():
-    names = glob.glob(args.output)
+    names = glob.glob("chalearn-output/*/*/*/*.png")
     if not names:
-        return "No .npy files to normalize, exiting..."
+        return "No images to normalize, exiting..."
 
-    print("Getting min-max across all arrays...")
+    # Get images to normalize
+    print("Getting images that need to be normalized...")
+    chalearn_input = glob.glob(args.input)
+    chalearn_output = {x.replace("png", "jpg"): 0 for x in names}
+    to_normalize = []
+    for i in chalearn_input:
+        img = i.replace("input", "output")
+        if img not in chalearn_output:
+            to_normalize.append(img)
+    num_of_images = len(to_normalize)
+
+    # Exit program if no images to process, else continue
+    if not to_normalize:
+        return "No images need to be normalized, exiting..."
+    print(f"{num_of_images} images need to be normalized, proceeding...")
+
+    print("Getting min-max across all images...")
     min = np.inf
     max = 0
-    for arr in tqdm(names):
-        arr = np.load(arr)
-        lmin = np.min(arr)
-        lmax = np.max(arr)
+    for i, img in tqdm(enumerate(names)):
+        path = "/".join(names[i].replace("input", "output").split("\\")[:4])
+        name = names[i].split("\\")[4:][0][:-4]
+        img = cv2.imread(f"{path}/{name}.png", cv2.IMREAD_UNCHANGED)
+        lmin = np.min(img)
+        lmax = np.max(img)
         if lmin < min:
             min = lmin
         if lmax > max:
             max = lmax
 
     print("Normalizing and saving images...")
-    for k, arr in tqdm(enumerate(names)):
+    for j, img in tqdm(enumerate(names)):
         # Get path to image and name
-        path = "/".join(names[k].replace("input", "output").split("\\")[:4])
-        name = names[k].split("\\")[4:][0][:-4]
-        # Normalize image to 0-255 range according to formula
+        path = "/".join(names[j].replace("input", "output").split("\\")[:4])
+        name = names[j].split("\\")[4:][0][:-4]
+        # Min-max normalize image to 0-255 range
         # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
-        arr = np.load(f"{path}/{name}.npy")
-        img = (255.0 * (arr - min) / (max - min)).astype(np.uint8)
+        img = cv2.imread(f"{path}/{name}.png", cv2.IMREAD_UNCHANGED)
+        img = (255.0 * (img - min) / (max - min)).astype(np.uint8)
         # Save image
-        cv2.imwrite(f"{path}/{name}.png", img)
+        cv2.imwrite(f"{path}/{name}.jpg", img)
 
-    '''print("Cleaning up...")
-    # Remove .npy files
-    for npy in tqdm(names):
-        os.remove(npy)'''
+    print("Cleaning up...")
+    # Remove .png images
+    for png in tqdm(names):
+        os.remove(png)
 
-    return "All done!"
+    print("All done!")
 
 
 if __name__ == "__main__":
@@ -159,7 +178,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
     parser.add_argument("--model", default="nyu.h5", type=str, help="Trained Keras model file.")
     parser.add_argument("--input", default="chalearn-input/*/*/*/*.jpg", type=str, help="Input folder.")
-    parser.add_argument("--output", default="chalearn-output/*/*/*/*.npy", type=str, help="Output folder.")
+    parser.add_argument("--output", default="chalearn-output/*/*/*/*.*", type=str, help="Output folder.")
     args = parser.parse_args()
 
     # Custom objects needed for inference and training
@@ -172,5 +191,5 @@ if __name__ == "__main__":
     else:
         print("Skipping resizing of images...")
 
-    estimate_depth()
-    normalize()
+    print(estimate_depth())
+    print(normalize())
