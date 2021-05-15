@@ -39,7 +39,7 @@ def estimate_depth():
     chalearn_output = {x: 0 for x in glob.glob(args.output)}
     to_process = []
     for i in chalearn_input:
-        img = i.replace("input", "output").replace("jpg", "png")
+        img = i.replace("input", "output").replace("jpg", "npy")
         if img not in chalearn_output:
             to_process.append(i)
     num_of_images = len(to_process)
@@ -91,10 +91,16 @@ def estimate_depth():
             os.makedirs(path, exist_ok=True)
             # Resize image
             img = cv2.resize(item, (320, 240))
-            # Multiply by 10000 to retain more accuracy, but keep filesize down
-            img = (img*10000).astype(np.uint16)
-            # Save image
-            cv2.imwrite(f"{path}/{name}.png", img)
+            # Save image as numpy array of type float16 to save storage space
+            '''
+            NOTE: A float32 .npy file takes up 300 KB, resulting in ~600 GB with ~2 million images;
+            a float16 .npy file still takes up 150 KB (~300 GB), but I had enough space available.
+            Another option considered was multiplying float32 by 10,000 and casting to uint16,
+            which gives roughly the same accuracy as float16 and takes up only ~75 KB (150 GB) 
+            when saved as a .png image - might increase computation time of normalization though.
+            Feel free to come up with a smarter solution ^^
+            '''
+            np.save(f"{path}/{name}", img.astype(np.float16))
 
         # Update variables
         current_batch += 1
@@ -111,14 +117,14 @@ def estimate_depth():
 
 
 def normalize():
-    names = glob.glob("chalearn-output/*/*/*/*.png")
+    names = glob.glob("chalearn-output/*/*/*/*.npy")
     if not names:
         return "No images to normalize, exiting..."
 
     # Get images to normalize
     print("Getting images that need to be normalized...")
     chalearn_input = glob.glob(args.input)
-    chalearn_output = {x.replace("png", "jpg"): 0 for x in names}
+    chalearn_output = {x: 0 for x in names}
     to_normalize = []
     for i in chalearn_input:
         img = i.replace("input", "output")
@@ -134,10 +140,8 @@ def normalize():
     print("Getting min-max across all images...")
     min = np.inf
     max = 0
-    for i, img in tqdm(enumerate(names)):
-        path = "/".join(names[i].replace("input", "output").split("\\")[:4])
-        name = names[i].split("\\")[4:][0][:-4]
-        img = cv2.imread(f"{path}/{name}.png", cv2.IMREAD_UNCHANGED)
+    for img in tqdm(names):
+        img = np.load(img)
         lmin = np.min(img)
         lmax = np.max(img)
         if lmin < min:
@@ -152,15 +156,15 @@ def normalize():
         name = names[j].split("\\")[4:][0][:-4]
         # Min-max normalize image to 0-255 range
         # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
-        img = cv2.imread(f"{path}/{name}.png", cv2.IMREAD_UNCHANGED)
+        img = np.load(f"{path}/{name}.npy")
         img = (255.0 * (img - min) / (max - min)).astype(np.uint8)
-        # Save image
+        # Save normalized image as .jpg
         cv2.imwrite(f"{path}/{name}.jpg", img)
 
-    print("Cleaning up...")
-    # Remove .png images
-    for png in tqdm(names):
-        os.remove(png)
+    '''print("Cleaning up...")
+    # Remove .npy files
+    for npy in names:
+        os.remove(npy)'''
 
     print("All done!")
 
