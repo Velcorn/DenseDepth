@@ -54,7 +54,7 @@ def estimate_depth():
     # Get images to process
     print("Getting images that need to be processed...")
     chalearn_input = glob.glob(args.input)
-    chalearn_output = {x: 0 for x in glob.glob(args.output)}
+    chalearn_output = set(x for x in glob.glob(args.output))
     to_process = []
     for i in chalearn_input:
         img = i.replace("input", "output").replace("jpg", "npy")
@@ -142,7 +142,7 @@ def normalize():
     # Get images to normalize
     print("Getting images that need to be normalized...")
     chalearn_input = glob.glob(args.input)
-    chalearn_output = {x: 0 for x in names}
+    chalearn_output = set(x for x in names)
     to_normalize = []
     for i in chalearn_input:
         img = i.replace("input", "output")
@@ -155,17 +155,22 @@ def normalize():
         return "No images need to be normalized, exiting..."
     print(f"{num_of_images} images need to be normalized, proceeding...")
 
-    print("Getting min-max across all images...")
-    min_val = np.inf
-    max_val = 0
-    for name in tqdm(names):
-        name = np.load(name)
-        min_img_val = np.min(name)
-        max_img_val = np.max(name)
-        if min_img_val < min_val:
-            min_val = min_img_val
-        if max_img_val > max_val:
-            max_val = max_img_val
+    if not os.path.exists("min-max.txt"):
+        print("Getting min-max across all images...")
+        min_val = np.inf
+        max_val = 0
+        for name in tqdm(names):
+            name = np.load(name)
+            min_img_val = np.min(name)
+            max_img_val = np.max(name)
+            if min_img_val < min_val:
+                min_val = min_img_val
+            if max_img_val > max_val:
+                max_val = max_img_val
+
+    with open("min-max.txt", "r") as f:
+        min_val = 0
+        max_val = 1
 
     print("Normalizing and saving images...")
     for j, img in tqdm(enumerate(names)):
@@ -175,7 +180,7 @@ def normalize():
         # Min-max normalize image to 0-255 range
         # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
         img = np.load(f"{path}/{name}.npy")
-        img = (255.0 * (img - min) / (max - min)).astype(np.uint8)
+        img = (255.0 * (img - min_val) / (max_val - min_val)).astype(np.uint8)
         # Save normalized image as .jpg
         cv2.imwrite(f"{path}/{name}.jpg", img)
 
