@@ -57,8 +57,8 @@ def estimate_depth():
     chalearn_output = {x: 0 for x in glob.glob(args.output)}
     to_process = []
     for i in chalearn_input:
-        name = i.replace("input", "output").replace("jpg", "npy")
-        if name not in chalearn_output:
+        img = i.replace("input", "output").replace("jpg", "npy")
+        if img not in chalearn_output:
             to_process.append(i)
     num_of_images = len(to_process)
     remaining = num_of_images
@@ -108,7 +108,7 @@ def estimate_depth():
             # Create dir
             os.makedirs(path, exist_ok=True)
             # Resize image
-            name = cv2.resize(item, (320, 240))
+            img = cv2.resize(item, (320, 240))
             # Save image as numpy array of type float16 to save storage space
             '''
             NOTE: A float32 .npy file takes up 300 KB, resulting in ~600 GB with ~2 million images;
@@ -118,7 +118,7 @@ def estimate_depth():
             when saved as a .png image - might increase computation time of normalization though.
             Feel free to come up with a smarter solution ^^
             '''
-            np.save(f"{path}/{name}", name.astype(np.float16))
+            np.save(f"{path}/{name}", img.astype(np.float16))
 
         # Update variables
         current_batch += 1
@@ -145,9 +145,9 @@ def normalize():
     chalearn_output = {x: 0 for x in names}
     to_normalize = []
     for i in chalearn_input:
-        name = i.replace("input", "output").replace("jpg", "npy")
-        if name not in chalearn_output:
-            to_normalize.append(name)
+        img = i.replace("input", "output")
+        if img not in chalearn_output:
+            to_normalize.append(img)
     num_of_images = len(to_normalize)
 
     # Exit program if no images to process, else continue
@@ -168,16 +168,16 @@ def normalize():
             max_val = max_img_val
 
     print("Normalizing and saving images...")
-    for j, name in enumerate(tqdm(names)):
+    for j, img in tqdm(enumerate(names)):
         # Get path to image and name
         path = "/".join(names[j].replace("input", "output").split("\\")[:4])
         name = names[j].split("\\")[4:][0][:-4]
         # Min-max normalize image to 0-255 range
         # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
-        name = np.load(f"{path}/{name}.npy")
-        name = (255.0 * (name - min_val) / (max_val - min_val)).astype(np.uint8)
+        img = np.load(f"{path}/{name}.npy")
+        img = (255.0 * (img - min) / (max - min)).astype(np.uint8)
         # Save normalized image as .jpg
-        cv2.imwrite(f"{path}/{name}.jpg", name)
+        cv2.imwrite(f"{path}/{name}.jpg", img)
 
     print("Finished normalizing images!")
 
