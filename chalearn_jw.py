@@ -9,8 +9,8 @@ import cv2
 import gc
 import glob
 import os
+import tifffile
 import numpy as np
-from PIL import Image
 from tqdm import tqdm
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -39,14 +39,17 @@ custom_objects = {"BilinearUpSampling2D": BilinearUpSampling2D, "depth_loss_func
 
 
 # Resizes images in path to 640x480
-def resize_640(path):
+def resize_640():
     print("Resizing images to 640x480...")
-    for img in tqdm(glob.glob(f"{path}/*/*/*/*.jpg")):
-        img = Image.open(img)
+    input = glob.glob("chalearn-input/*/*/*/*.jpg")
+    for item in tqdm(input):
+        path = "/".join(item.replace("\\", "/").split("/")[:-1])
+        name = item.replace("\\", "/").split("/")[-1:][0][:-4]
+        img = cv2.imread(item)
         if img.size[0] == 640:
             continue
-        imgr = img.resize((640, 480), Image.ANTIALIAS)
-        imgr.save(img, "JPEG")
+        cv2.resize(img, (640, 480))
+        cv2.imwrite(f"{path}/{name}.jpg", img)
     print("Finished resizing images!")
 
 
@@ -57,7 +60,7 @@ def estimate_depth():
     output = set(x for x in glob.glob(args.output))
     to_process = []
     for i in input:
-        img = i.replace("input", "output").replace("jpg", "npy")
+        img = i.replace("input", "output").replace("jpg", "tiff")
         if img not in output:
             to_process.append(i)
     num_of_images = len(to_process)
@@ -84,7 +87,7 @@ def estimate_depth():
         batch_number = num_of_images // batch_size + 1
     l = (current_batch - 1) * batch_size
     r = current_batch * batch_size
-    for i in tqdm(range(batch_number - current_batch + 1)):
+    for _ in tqdm(range(batch_number - current_batch + 1)):
         print(f"\nProcessing batch {current_batch} of {batch_number}...")
 
         # Load images into memory
@@ -108,7 +111,7 @@ def estimate_depth():
             # Create dir
             os.makedirs(path, exist_ok=True)
             # Resize image
-            img = cv2.resize(item, (320, 240))
+            cv2.resize(item, (320, 240))
             # Save image as numpy array of type float16 to save storage space
             '''
             NOTE: A float32 .npy file takes up 300 KB, resulting in ~600 GB with ~2 million images;
@@ -118,7 +121,11 @@ def estimate_depth():
             when saved as a .png image - might increase computation time of normalization though.
             Feel free to come up with a smarter solution ^^
             '''
-            np.save(f"{path}/{name}", img.astype(np.float16))
+            np.save(f"{path}/{name}", item.astype(np.float16))
+
+            # Optionally normalize image to 0-255 range and save as .jpg
+            '''img = 255 * item / np.max(item)
+            cv2.imwrite(f"{path}/{name}.jpg", img)'''
 
         # Update variables
         current_batch += 1
@@ -196,7 +203,7 @@ if __name__ == "__main__":
     # Resize images if resize boolean True.
     resize = False
     if resize:
-        print(resize_640("chalearn-input"))
+        print(resize_640())
     else:
         print("Skipping resizing of images...")
 

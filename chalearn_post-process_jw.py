@@ -29,9 +29,7 @@ def post_process():
         name = item.replace("\\", "/").split("/")[-1:][0][:-4]
         # Apply gamma correction to image
         img = cv2.imread(item)
-        mid = 0.5
-        mean = np.mean(img)
-        gamma = math.log(mid * 255) / math.log(mean)
+        gamma = math.log(.5 * 255) / math.log(np.mean(img))
         corrected_img = np.power(img, gamma).clip(0, 255).astype(np.uint8)
         # Create target dir and save image
         os.makedirs(path, exist_ok=True)
