@@ -53,12 +53,12 @@ def resize_640(path):
 def estimate_depth():
     # Get images to process
     print("Getting images that need to be processed...")
-    chalearn_input = glob.glob(args.input)
-    chalearn_output = set(x for x in glob.glob(args.output))
+    input = glob.glob(args.input)
+    output = set(x for x in glob.glob(args.output))
     to_process = []
-    for i in chalearn_input:
+    for i in input:
         img = i.replace("input", "output").replace("jpg", "npy")
-        if img not in chalearn_output:
+        if img not in output:
             to_process.append(i)
     num_of_images = len(to_process)
     remaining = num_of_images
@@ -141,12 +141,12 @@ def normalize():
 
     # Get images to normalize
     print("Getting images that need to be normalized...")
-    chalearn_input = glob.glob(args.input)
-    chalearn_output = set(x for x in names)
+    input = glob.glob(args.input)
+    output = set(x for x in names)
     to_normalize = []
-    for i in chalearn_input:
+    for i in input:
         img = i.replace("input", "output")
-        if img not in chalearn_output:
+        if img not in output:
             to_normalize.append(img)
     num_of_images = len(to_normalize)
 
@@ -167,10 +167,15 @@ def normalize():
                 min_val = min_img_val
             if max_img_val > max_val:
                 max_val = max_img_val
+        # Write values to text file
+        with open("min-max.txt", "w") as f:
+            f.write(f"{min_val},{max_val}")
 
+    # Get values from text file
     with open("min-max.txt", "r") as f:
-        min_val = 0
-        max_val = 1
+        line = f.readline().split(",")
+        min_val = line[0]
+        max_val = line[1]
 
     print("Normalizing and saving images...")
     for j, img in tqdm(enumerate(names)):

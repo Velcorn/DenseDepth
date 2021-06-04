@@ -8,12 +8,12 @@ from tqdm import tqdm
 
 def post_process():
     print("Getting images to post-process...")
-    input = glob.glob("chalearn-output/test/c001/M_00129/*.jpg")
+    input = glob.glob("chalearn-output/*/*/*/*.jpg")
     output = set(x.replace("\\", "/") for x in glob.glob("chalearn-post-processed/*/*/*/*"))
     to_post_process = []
     for item in input:
-        img = item.replace("\\", "/").replace("output", "post-processed")
-        if img not in output:
+        img = item.replace("\\", "/")
+        if img.replace("output", "post-processed") not in output:
             to_post_process.append(img)
     num_of_images = len(to_post_process)
 
@@ -24,8 +24,10 @@ def post_process():
 
     print("Post-processing images...")
     for item in tqdm(to_post_process):
-        path = "/".join(item.replace("\\", "/").split("/")[:-1])
+        # Get path and name separately
+        path = "/".join(item.replace("\\", "/").replace("output", "post-processed").split("/")[:-1])
         name = item.replace("\\", "/").split("/")[-1:][0][:-4]
+        # Apply gamma correction to image
         img = cv2.imread(item)
         mid = 0.5
         mean = np.mean(img)
