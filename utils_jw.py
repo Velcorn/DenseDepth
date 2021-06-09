@@ -1,5 +1,5 @@
 """
-Added some utils used for chalearn_jw.py
+Added some utils used for chalearn_pre-process_jw.py
 
 Jan Willruth
 """
