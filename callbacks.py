@@ -92,8 +92,9 @@ def get_nyu_callbacks(model, train_generator, test_generator, test_set, runPath)
     callbacks.append(lr_schedule)  # reduce learning rate when stuck
 
     # Callback: save checkpoints
+    # JW: Updated verbose=1 to verbose=2 and period=5 to save_freq='epoch'
     callbacks.append(keras.callbacks.ModelCheckpoint(
-        runPath + '/weights.{epoch:02d}-{val_loss:.2f}.hdf5', monitor='val_loss', verbose=1, save_best_only=False,
-        save_weights_only=False, mode='min', save_freq='epoch'))  # JW: update period=5 to save_freq='epoch'
+        runPath + '/weights.{epoch:02d}-{val_loss:.2f}.hdf5', monitor='val_loss', verbose=2, save_best_only=False,
+        save_weights_only=False, mode='min', save_freq='epoch'))
 
     return callbacks

@@ -1,19 +1,19 @@
-# ['Z:/Documents/Programming/DenseDepth/train.py']
-# ['Z:/Documents/Programming/DenseDepth/train.py']
-import os, sys, glob, time, pathlib, argparse
+import argparse
+import os
+import pathlib
+import time
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 
 # Keras / TensorFlow
 from loss import depth_loss_function
-from utils_jw import predict, save_images, load_test_data
+from utils_jw import load_test_data
 from model import create_model
 from data import get_nyu_train_test_data, get_unreal_train_test_data
 from callbacks import get_nyu_callbacks
-
 from keras.optimizers import Adam
 # from keras.utils import multi_gpu_model
-from keras.utils.vis_utils import plot_model
+# from keras.utils.vis_utils import plot_model
 
 # JW: TF memory allocation fix
 import tensorflow as tf
@@ -87,7 +87,7 @@ basemodel = model
 optimizer = Adam(lr=args.lr, amsgrad=True)
 
 # Compile the model
-print('\n\n\n', 'Compiling model..', runID, '\n\n\tGPU ' + (str(args.gpus) + ' gpus' if args.gpus > 1 else args.gpuids)
+print('\n\n\n', 'Compiling model:', runID, '\n\n\tGPU ' + (str(args.gpus) + ' gpus' if args.gpus > 1 else args.gpuids)
       + '\t\tBatch size [ ' + str(args.bs) + ' ] ' + ' \n\n')
 model.compile(loss=depth_loss_function, optimizer=optimizer)
 
