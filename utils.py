@@ -1,13 +1,5 @@
-"""
-Added some utils used for chalearn_pre-process_jw.py
-
-Jan Willruth
-"""
-
-import glob
-from PIL import Image, ImageEnhance
 import numpy as np
-from tqdm import tqdm
+from PIL import Image
 
 
 def DepthNorm(x, maxDepth):

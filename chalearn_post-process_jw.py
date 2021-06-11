@@ -1,3 +1,9 @@
+"""
+A script to post-process the pseudo-depth frames created using chalearn_pre-process_jw.py
+
+Jan Willruth
+"""
+
 import cv2
 import glob
 import math

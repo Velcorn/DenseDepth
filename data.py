@@ -1,5 +1,5 @@
 import numpy as np
-from utils_jw import DepthNorm
+from utils import DepthNorm
 from io import BytesIO
 from PIL import Image
 from zipfile import ZipFile
@@ -12,7 +12,7 @@ def extract_zip(input_zip):
     return {name: input_zip.read(name) for name in input_zip.namelist()}
 
 
-def nyu_resize(img, resolution=480, padding=6):
+def nyu_resize(img, resolution=480):  # JW: Removed unused padding=6 parameter
     from skimage.transform import resize
     return resize(img, (resolution, int(resolution * 4 / 3)), preserve_range=True, mode='reflect', anti_aliasing=True)
 
@@ -114,10 +114,9 @@ class NYU_BasicRGBSequence(Sequence):
 
             sample = self.dataset[index]
 
-            x = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[0]]))).reshape(480, 640, 3) / 255, 0, 1)
-            y = np.asarray(Image.open(BytesIO(self.data[sample[1]])), dtype=np.float32).reshape(480, 640,
-                                                                                                1).copy().astype(
-                float) / 10.0
+            x = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[0]]))).reshape(480, 640) / 255, 0, 1)
+            y = np.asarray(Image.open(BytesIO(self.data[sample[1]])),
+                           dtype=np.float32).reshape(480, 640).copy().astype(float) / 10.0
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)
@@ -130,9 +129,42 @@ class NYU_BasicRGBSequence(Sequence):
         return batch_x, batch_y
 
 
-# ================
-# Unreal dataset
-# ================
+# ================ #
+# Chalearn dataset #
+# ================ #
+
+def get_chalearn_data(batch_size, chalearn_data_zipfile='chalearn_data.zip'):
+    data = extract_zip(chalearn_data_zipfile)
+
+    chalearn_train = list(
+        (row.split(',') for row in (data['data/chalearn_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    chalearn_test = list(
+        (row.split(',') for row in (data['data/chalearn_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
+
+    shape_rgb = (batch_size, 480, 640, 3)
+    shape_depth = (batch_size, 240, 320, 1)
+
+    # Helpful for testing...
+    '''nyu2_train = nyu2_train[:10]
+    nyu2_test = nyu2_test[:10]'''
+
+    return data, chalearn_train, chalearn_test, shape_rgb, shape_depth
+
+
+def get_chalearn_train_test_data(batch_size):
+    data, chalearn_train, chalearn_test, shape_rgb, shape_depth = get_chalearn_data(batch_size)
+
+    train_generator = NYU_BasicAugmentRGBSequence(data, chalearn_train, batch_size=batch_size, shape_rgb=shape_rgb,
+                                                  shape_depth=shape_depth)
+    test_generator = NYU_BasicRGBSequence(data, chalearn_test, batch_size=batch_size, shape_rgb=shape_rgb,
+                                          shape_depth=shape_depth)
+
+    return train_generator, test_generator
+
+
+# ============== #
+# Unreal dataset #
+# ============== #
 
 import cv2
 from skimage.transform import resize
@@ -194,7 +226,8 @@ class Unreal_BasicAugmentRGBSequence(Sequence):
         batch_x, batch_y = np.zeros(self.shape_rgb), np.zeros(self.shape_depth)
 
         # Useful for validation
-        if self.is_skip_policy: is_apply_policy = False
+        if self.is_skip_policy:
+            is_apply_policy = False
 
         # Augmentation of RGB images
         for i in range(batch_x.shape[0]):
@@ -214,7 +247,8 @@ class Unreal_BasicAugmentRGBSequence(Sequence):
             batch_x[i] = x
             batch_y[i] = y
 
-            if is_apply_policy: batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
+            if is_apply_policy:
+                batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
 
             # self.policy.debug_img(batch_x[i], np.clip(DepthNorm(batch_y[i],self.maxDepth)/self.maxDepth,0,1), index, i)
 

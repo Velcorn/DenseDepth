@@ -8,7 +8,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 from keras.models import load_model
 from layers import BilinearUpSampling2D
 from loss import depth_loss_function
-from utils_jw import predict, load_images, display_images, evaluate
+from utils import predict, load_images, display_images, evaluate
 from matplotlib import pyplot as plt
 
 # Argument Parser

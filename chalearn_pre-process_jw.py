@@ -1,5 +1,5 @@
 """
-Modified test.py to batch-wise process Chalearn RGB frames to normalized and post-processed pseudo-depth frames for SLR.
+A script based on test.py to batch-wise process Chalearn RGB frames to pseudo-depth frames and normalize them for SLR.
 
 Jan Willruth
 """
@@ -7,17 +7,17 @@ Jan Willruth
 import argparse
 import cv2
 import gc
-import glob
 import os
 import tifffile
 import numpy as np
+from glob import glob
 from tqdm import tqdm
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tensorflow as tf
 from keras.models import load_model
 from layers import BilinearUpSampling2D
-from utils_jw import predict, load_images
+from utils import predict, load_images
 
 # JW: Limit memory usage to a fraction of total GPU memory.
 total_memory = 8000
@@ -42,7 +42,7 @@ custom_objects = {"BilinearUpSampling2D": BilinearUpSampling2D, "depth_loss_func
 # Resizes images in path to 640x480
 def resize_640():
     print("Resizing images to 640x480...")
-    input = glob.glob(f"{args.input}/*/*/*/*.jpg")
+    input = glob(f"{args.input}/*/*/*/*.jpg")
     for item in tqdm(input):
         path = "/".join(item.replace("\\", "/").split("/")[:-1])
         name = item.replace("\\", "/").split("/")[-1:][0][:-4]
@@ -57,8 +57,8 @@ def resize_640():
 def estimate_depth():
     # Get images to process
     print("Getting images that need to be processed...")
-    input = glob.glob(f"{args.input}/*/*/*/*.jpg")
-    output = set(x for x in glob.glob(f"{args.output}/*/*/*/*.tiff"))
+    input = glob(f"{args.input}/*/*/*/*.jpg")
+    output = set(x for x in glob(f"{args.output}/*/*/*/*.tiff"))
     to_process = []
     for i in input:
         img = i.replace(args.input, args.output).replace("jpg", "tiff")
@@ -146,8 +146,8 @@ def estimate_depth():
 def normalize():
     # Get images to normalize
     print("Getting images that need to be normalized...")
-    input = glob.glob(f"{args.input}/*/*/*/*.*")
-    output = set(x for x in glob.glob(f"{args.output}/*/*/*/*.npy"))
+    input = glob(f"{args.input}/*/*/*/*.*")
+    output = set(x for x in glob(f"{args.output}/*/*/*/*.npy"))
     to_normalize = []
     for i in input:
         img = i.replace("input", "output")
@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
     print("Cleaning up...")
     # Remove .npy files
-    for npy in tqdm(glob.glob("chalearn-output/*/*/*/*.npy")):
+    for npy in tqdm(glob("chalearn-output/*/*/*/*.npy")):
         os.remove(npy)
 
     print("All done!!!")
