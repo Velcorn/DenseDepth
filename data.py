@@ -129,39 +129,6 @@ class NYU_BasicRGBSequence(Sequence):
         return batch_x, batch_y
 
 
-# ================ #
-# Chalearn dataset #
-# ================ #
-
-def get_chalearn_data(batch_size, chalearn_data_zipfile='chalearn_data.zip'):
-    data = extract_zip(chalearn_data_zipfile)
-
-    chalearn_train = list(
-        (row.split(',') for row in (data['data/chalearn_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
-    chalearn_test = list(
-        (row.split(',') for row in (data['data/chalearn_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
-
-    shape_rgb = (batch_size, 480, 640, 3)
-    shape_depth = (batch_size, 240, 320, 1)
-
-    # Helpful for testing...
-    '''nyu2_train = nyu2_train[:10]
-    nyu2_test = nyu2_test[:10]'''
-
-    return data, chalearn_train, chalearn_test, shape_rgb, shape_depth
-
-
-def get_chalearn_train_test_data(batch_size):
-    data, chalearn_train, chalearn_test, shape_rgb, shape_depth = get_chalearn_data(batch_size)
-
-    train_generator = NYU_BasicAugmentRGBSequence(data, chalearn_train, batch_size=batch_size, shape_rgb=shape_rgb,
-                                                  shape_depth=shape_depth)
-    test_generator = NYU_BasicRGBSequence(data, chalearn_test, batch_size=batch_size, shape_rgb=shape_rgb,
-                                          shape_depth=shape_depth)
-
-    return train_generator, test_generator
-
-
 # ============== #
 # Unreal dataset #
 # ============== #
@@ -253,3 +220,36 @@ class Unreal_BasicAugmentRGBSequence(Sequence):
             # self.policy.debug_img(batch_x[i], np.clip(DepthNorm(batch_y[i],self.maxDepth)/self.maxDepth,0,1), index, i)
 
         return batch_x, batch_y
+
+
+# ================ #
+# Chalearn dataset #
+# ================ #
+
+def get_chalearn_data(batch_size, chalearn_data_zipfile='chalearn_data.zip'):
+    data = extract_zip(chalearn_data_zipfile)
+
+    chalearn_train = list(
+        (row.split(',') for row in (data['data/chalearn_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    chalearn_test = list(
+        (row.split(',') for row in (data['data/chalearn_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
+
+    shape_rgb = (batch_size, 480, 640, 3)
+    shape_depth = (batch_size, 240, 320, 1)
+
+    # Helpful for testing...
+    '''nyu2_train = nyu2_train[:10]
+    nyu2_test = nyu2_test[:10]'''
+
+    return data, chalearn_train, chalearn_test, shape_rgb, shape_depth
+
+
+def get_chalearn_train_test_data(batch_size):
+    data, chalearn_train, chalearn_test, shape_rgb, shape_depth = get_chalearn_data(batch_size)
+
+    train_generator = NYU_BasicAugmentRGBSequence(data, chalearn_train, batch_size=batch_size, shape_rgb=shape_rgb,
+                                                  shape_depth=shape_depth)
+    test_generator = NYU_BasicRGBSequence(data, chalearn_test, batch_size=batch_size, shape_rgb=shape_rgb,
+                                          shape_depth=shape_depth)
+
+    return train_generator, test_generator
