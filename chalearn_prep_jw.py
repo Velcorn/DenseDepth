@@ -19,15 +19,16 @@ from glob import glob
 from tqdm import tqdm
 
 
-# Saves depth image JPEGs in path as 1-channel PNGs.
+# Resizes and saves depth image JPEGs as 1-channel PNGs.
 def depth_to_png():
-    print("Saving images as 1-channel PNG...")
+    print("Resizing and saving images as 1-channel PNG...")
     for item in tqdm(glob("chalearn_data/*/*/*/*.jpg")):
         path = "/".join(item.replace("\\", "/").split("/")[:-1])
         name = item.replace("\\", "/").split("/")[-1:][0][:-4]
-        if os.path.exists(f"{path}/{name}.png"):
-            continue
         img = cv2.imread(item)[:, :, 1]
+        if img.shape[1] == 640:
+            continue
+        img = cv2.resize(img, (640, 480))
         cv2.imwrite(f"{path}/{name}.png", img)
 
     # Remove .jpg files
@@ -35,7 +36,7 @@ def depth_to_png():
     for jpg in tqdm(glob("chalearn_data/*/*/*/*.jpg")):
         os.remove(jpg)
 
-    print("Finished saving images!")
+    print("Finished resizing and saving images!")
 
 
 # Rename video directories to strip them of M_/K_ prefix.

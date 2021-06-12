@@ -29,9 +29,9 @@ for gpu in tf.config.list_physical_devices('GPU'):
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
-parser.add_argument("--model", default="nyu.h5", type=str, help="Trained Keras model file.")
+parser.add_argument("--model", default="chalearn.hdf5", type=str, help="Trained Keras model file.")
 parser.add_argument("--input", default="chalearn-input", type=str, help="Input folder.")
-parser.add_argument("--output", default="Z:/Documents/Programming/BA/data-temp/chalearn/249-40/pdepth", type=str,
+parser.add_argument("--output", default="chalearn-output", type=str,
                     help="Output folder.")
 args = parser.parse_args()
 
@@ -47,9 +47,9 @@ def resize_640():
         path = "/".join(item.replace("\\", "/").split("/")[:-1])
         name = item.replace("\\", "/").split("/")[-1:][0][:-4]
         img = cv2.imread(item)
-        if img.size[0] == 640:
+        if img.shape[1] == 640:
             continue
-        cv2.resize(img, (640, 480))
+        img = cv2.resize(img, (640, 480))
         cv2.imwrite(f"{path}/{name}.jpg", img)
     print("Finished resizing images!")
 
@@ -58,10 +58,10 @@ def estimate_depth():
     # Get images to process
     print("Getting images that need to be processed...")
     input = glob(f"{args.input}/*/*/*/*.jpg")
-    output = set(x for x in glob(f"{args.output}/*/*/*/*.tiff"))
+    output = set(x for x in glob(f"{args.output}/*/*/*/*.npy"))
     to_process = []
     for i in input:
-        img = i.replace(args.input, args.output).replace("jpg", "tiff")
+        img = i.replace(args.input, args.output).replace("jpg", "npy")
         if img not in output:
             to_process.append(i.replace("\\", "/"))
     num_of_images = len(to_process)
@@ -122,12 +122,14 @@ def estimate_depth():
             when saved as a .png image - might increase computation time of normalization though.
             Feel free to come up with a better solution ^^
             '''
-            # np.save(f"{path}/{name}", item.astype(np.float16))
-            tifffile.imwrite(f"{path}/{name}.tiff", item.astype(np.float16))
+            np.save(f"{path}/{name}", item.astype(np.float16))
+
+            # Optionally save as TIFF.
+            # tifffile.imwrite(f"{path}/{name}.tiff", item.astype(np.float16))
 
             # Optionally normalize image to 0-255 range and save as .jpg
-            '''img = 255 * item / np.max(item)
-            cv2.imwrite(f"{path}/{name}.jpg", img)'''
+            # img = 255 * item / np.max(item)
+            # cv2.imwrite(f"{path}/{name}.jpg", img)
 
         # Update variables
         current_batch += 1
@@ -183,16 +185,16 @@ def normalize():
         max_val = float(line[1])
 
     print("Normalizing and saving images...")
-    for j, img in tqdm(enumerate(output)):
+    for j, img in tqdm(enumerate(to_normalize)):
         # Get path to image and name
-        path = "/".join(output[j].replace("input", "output").split("\\")[:4])
-        npy = output[j].split("\\")[4:][0][:-4]
+        path = "/".join(to_normalize[j].replace("input", "output").split("\\")[:4])
+        name = to_normalize[j].split("\\")[4:][0][:-4]
         # Min-max normalize image to 0-255 range
         # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
-        img = np.load(f"{path}/{npy}.npy")
+        img = np.load(f"{path}/{name}.npy")
         img = (255.0 * (img - min_val) / (max_val - min_val)).astype(np.uint8)
         # Save normalized image as .jpg
-        cv2.imwrite(f"{path}/{npy}.jpg", img)
+        cv2.imwrite(f"{path}/{name}.jpg", img)
 
     print("Finished normalizing images!")
 
@@ -206,7 +208,7 @@ if __name__ == "__main__":
         print("Skipping resizing of images...")
 
     print(estimate_depth())
-    # print(normalize())
+    print(normalize())
 
     print("Cleaning up...")
     # Remove .npy files

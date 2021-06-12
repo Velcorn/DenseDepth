@@ -76,16 +76,17 @@ class NYU_BasicAugmentRGBSequence(Sequence):
 
             sample = self.dataset[index]
 
-            x = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[0]]))).reshape(480, 640, 3) / 255, 0, 1)
-            y = np.clip(
-                np.asarray(Image.open(BytesIO(self.data[sample[1]]))).reshape(480, 640, 1) / 255 * self.maxDepth, 0,
-                self.maxDepth)
+            x = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[0].replace("\r", "")]))).
+                        reshape(480, 640, 3) / 255, 0, 1)
+            y = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[1].replace("\r", "")]))).
+                        reshape(480, 640, 1) / 255 * self.maxDepth, 0, self.maxDepth)
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)
             batch_y[i] = nyu_resize(y, 240)
 
-            if is_apply_policy: batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
+            if is_apply_policy:
+                batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
 
             # DEBUG:
             # self.policy.debug_img(batch_x[i], np.clip(DepthNorm(batch_y[i])/maxDepth,0,1), idx, i)
@@ -114,8 +115,9 @@ class NYU_BasicRGBSequence(Sequence):
 
             sample = self.dataset[index]
 
-            x = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[0]]))).reshape(480, 640, 3) / 255, 0, 1)
-            y = np.asarray(Image.open(BytesIO(self.data[sample[1]])),
+            x = np.clip(np.asarray(
+                Image.open(BytesIO(self.data[sample[0].replace("\r", "")]))).reshape(480, 640, 3) / 255, 0, 1)
+            y = np.asarray(Image.open(BytesIO(self.data[sample[1].replace("\r", "")])),
                            dtype=np.float32).reshape(480, 640, 1).copy().astype(float) / 10.0
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
