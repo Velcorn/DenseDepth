@@ -29,7 +29,7 @@ for gpu in tf.config.list_physical_devices('GPU'):
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
-parser.add_argument("--model", default="chalearn.hdf5", type=str, help="Trained Keras model file.")
+parser.add_argument("--model", default="chalearn.h5", type=str, help="Trained Keras model file.")
 parser.add_argument("--input", default="chalearn-input", type=str, help="Input folder.")
 parser.add_argument("--output", default="chalearn-output", type=str,
                     help="Output folder.")
@@ -112,24 +112,21 @@ def estimate_depth():
             # Create dir
             os.makedirs(path, exist_ok=True)
             # Resize image
-            cv2.resize(item, (320, 240))
+            img = cv2.resize(item, (320, 240))
             # Save image as numpy array of type float16 to save storage space
             '''
-            NOTE: A float32 .npy file takes up 300 KB, resulting in ~600 GB with ~2 million images;
-            a float16 .npy file still takes up 150 KB (~300 GB), but I had enough space available.
-            Another option considered was multiplying float32 by 10,000 and casting to uint16,
-            which gives roughly the same accuracy as float16 and takes up only ~75 KB (150 GB) 
-            when saved as a .png image - might increase computation time of normalization though.
+            NOTE: A float32 NPY file takes up 300 KB, resulting in ~600 GB with ~2 million images;
+            a float16 NPY file still takes up 150 KB (~300 GB), but I had enough space available.
             Feel free to come up with a better solution ^^
             '''
-            np.save(f"{path}/{name}", item.astype(np.float16))
+            # np.save(f"{path}/{name}", img.astype(np.float16))
 
-            # Optionally save as TIFF.
+            # Save as TIFF to view as image.
             # tifffile.imwrite(f"{path}/{name}.tiff", item.astype(np.float16))
 
-            # Optionally normalize image to 0-255 range and save as .jpg
-            # img = 255 * item / np.max(item)
-            # cv2.imwrite(f"{path}/{name}.jpg", img)
+            # Normalize to 0-255 range and save as JPG.
+            img = (255.0 * img / np.max(img)).astype(np.uint8)
+            cv2.imwrite(f"{path}/{name}.jpg", img)
 
         # Update variables
         current_batch += 1
@@ -145,16 +142,15 @@ def estimate_depth():
     return "Finished all batches!"
 
 
-def normalize():
+def normalize_imgs():
     # Get images to normalize
     print("Getting images that need to be normalized...")
-    input = glob(f"{args.input}/*/*/*/*.*")
-    output = set(x for x in glob(f"{args.output}/*/*/*/*.npy"))
+    input = glob(f"{args.output}/*/*/*/*.npy")
+    output = set(x for x in glob(f"{args.output}/*/*/*/*.jpg"))
     to_normalize = []
     for i in input:
-        img = i.replace("input", "output")
-        if img not in output:
-            to_normalize.append(img)
+        if i.replace("npy", "jpg") not in output:
+            to_normalize.append(i.replace("\\", "/"))
     num_of_images = len(to_normalize)
 
     # Exit program if no images to process, else continue
@@ -166,10 +162,10 @@ def normalize():
         print("Getting min-max across all images...")
         min_val = np.inf
         max_val = 0
-        for npy in tqdm(output):
-            npy = np.load(npy)
-            min_img_val = np.min(npy)
-            max_img_val = np.max(npy)
+        for npy in tqdm(to_normalize):
+            arr = np.load(npy)
+            min_img_val = np.min(arr)
+            max_img_val = np.max(arr)
             if min_img_val < min_val:
                 min_val = min_img_val
             if max_img_val > max_val:
@@ -185,34 +181,44 @@ def normalize():
         max_val = float(line[1])
 
     print("Normalizing and saving images...")
-    for j, img in tqdm(enumerate(to_normalize)):
-        # Get path to image and name
-        path = "/".join(to_normalize[j].replace("input", "output").split("\\")[:4])
-        name = to_normalize[j].split("\\")[4:][0][:-4]
-        # Min-max normalize image to 0-255 range
-        # (see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array)
-        img = np.load(f"{path}/{name}.npy")
+    for npy in tqdm(to_normalize):
+        # Min-max normalize image to 0-255 range,
+        # see https://stackoverflow.com/questions/48178884/min-max-normalisation-of-a-numpy-array for details.
+        img = np.load(npy)
         img = (255.0 * (img - min_val) / (max_val - min_val)).astype(np.uint8)
-        # Save normalized image as .jpg
-        cv2.imwrite(f"{path}/{name}.jpg", img)
+        # Save normalized image as JPG.
+        cv2.imwrite(npy.replace("npy", "jpg"), img)
 
     print("Finished normalizing images!")
 
 
 if __name__ == "__main__":
-    # Resize images if resize boolean True.
+    # Booleans for execution of functions.
     resize = False
+    estimate = True
+    normalize = False
+    remove = False
+    clean = False
+
     if resize:
         print(resize_640())
     else:
         print("Skipping resizing of images...")
 
-    print(estimate_depth())
-    print(normalize())
+    if estimate:
+        print(estimate_depth())
 
-    print("Cleaning up...")
-    # Remove .npy files
-    for npy in tqdm(glob("chalearn-output/*/*/*/*.npy")):
-        os.remove(npy)
+    if normalize:
+        if remove:
+            # Remove existing min-max.txt
+            if os.path.exists("min-max.txt"):
+                os.remove("min-max.txt")
+        print(normalize_imgs())
+
+    if clean:
+        print("Cleaning up...")
+        # Remove NPY files.
+        for file in tqdm(glob("chalearn-output/*/*/*/*.npy")):
+            os.remove(file)
 
     print("All done!!!")

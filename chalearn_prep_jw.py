@@ -14,9 +14,46 @@ Jan Willruth
 import cv2
 import csv
 import os
+import shutil
 import sys
 from glob import glob
 from tqdm import tqdm
+
+
+# Move part of Chalearn dataset to generate a train set for depth estimation.
+def move_files():
+    print("Moving files...")
+
+    rgb = "chalearn-input2"
+    depth = "Z:/Documents/Programming/BA/data-temp/chalearn/249-40/depth"
+
+    for dt in [rgb, depth]:
+        if dt == rgb:
+            target = "chalearn-data/data"
+        else:
+            target = "chalearn-data"
+
+        for d in os.listdir(dt):
+            if d == "valid":
+                continue
+            elif d == "train":
+                for sd in tqdm(os.listdir(f"{dt}/{d}")):
+                    for ssd in os.listdir(f"{dt}/{d}/{sd}")[:10]:
+                        target_dir = f"{target}/{d}/{sd}/{ssd}"
+                        try:
+                            shutil.copytree(f"{dt}/{d}/{sd}/{ssd}", target_dir)
+                        except FileExistsError:
+                            pass
+            elif d == "test":
+                for sd in tqdm(os.listdir(f"{dt}/{d}")):
+                    for ssd in os.listdir(f"{dt}/{d}/{sd}")[:1]:
+                        target_dir = f"{target}/{d}/{sd}/{ssd}"
+                        try:
+                            shutil.copytree(f"{dt}/{d}/{sd}/{ssd}", target_dir)
+                        except FileExistsError:
+                            pass
+
+    print("Finished moving files!")
 
 
 # Resizes and saves depth image JPEGs as 1-channel PNGs.
@@ -82,9 +119,13 @@ def create_csvs():
 
 
 if __name__ == "__main__":
+    move = True
     convert = False
     rename = False
-    create = True
+    create = False
+
+    if move:
+        print(move_files())
 
     if convert:
         print(depth_to_png())

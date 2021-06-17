@@ -3,7 +3,9 @@ from PIL import Image
 
 
 def DepthNorm(x, maxDepth):
-    return maxDepth / (x + 1e4)
+    # JW: Avoid division by 0 error
+    x[x == 0] = 1e4
+    return maxDepth / x
 
 
 def predict(model, images, minDepth=10, maxDepth=1000, batch_size=2):
