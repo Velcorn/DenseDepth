@@ -29,7 +29,7 @@ for gpu in tf.config.list_physical_devices('GPU'):
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
-parser.add_argument("--model", default="chalearn.h5", type=str, help="Trained Keras model file.")
+parser.add_argument("--model", default="chalearn_249.h5", type=str, help="Trained Keras model file.")
 parser.add_argument("--input", default="chalearn-input", type=str, help="Input folder.")
 parser.add_argument("--output", default="chalearn-output", type=str,
                     help="Output folder.")
@@ -119,14 +119,10 @@ def estimate_depth():
             a float16 NPY file still takes up 150 KB (~300 GB), but I had enough space available.
             Feel free to come up with a better solution ^^
             '''
-            # np.save(f"{path}/{name}", img.astype(np.float16))
+            np.save(f"{path}/{name}", img.astype(np.float16))
 
             # Save as TIFF to view as image.
             # tifffile.imwrite(f"{path}/{name}.tiff", item.astype(np.float16))
-
-            # Normalize to 0-255 range and save as JPG.
-            img = (255.0 * img / np.max(img)).astype(np.uint8)
-            cv2.imwrite(f"{path}/{name}.jpg", img)
 
         # Update variables
         current_batch += 1
@@ -196,9 +192,9 @@ if __name__ == "__main__":
     # Booleans for execution of functions.
     resize = False
     estimate = True
-    normalize = False
+    normalize = True
     remove = False
-    clean = False
+    clean = True
 
     if resize:
         print(resize_640())

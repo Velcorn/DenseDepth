@@ -4,9 +4,9 @@ A script to prepare the ChaLearn IsoGD dataset, so the depth estimation network 
 Expected procedure:
 - Execute move_files to copy a subset of the Chalearn dataset
 - Execute depth_to_png to convert depth images to 1-channel PNGs
-- Manually move the depth data into "chalearn_data/data" to merge
+- Manually move the depth data from "chalearn_data" into "chalearn_data/data" to merge (faced permission errors)
 - Execute create_csvs to generate CSV files in the format of: "RGB_name, depth_name"
-- Zip the "chalearn_data/data" folder and rename it to "chalearn_data.zip"
+- Zip the "chalearn_data/data" folder, rename it to "chalearn_data.zip" and move it into the root dir
 
 Jan Willruth
 """
@@ -15,14 +15,14 @@ import csv
 import os
 import shutil
 import sys
-import subprocess
+import numpy as np
 from glob import glob
 from tqdm import tqdm
 
 
 # Copy part of Chalearn dataset to generate a train set for depth estimation.
 def copy_files():
-    print("Moving files...")
+    print("Copying files...")
 
     # Source dirs
     rgb = "chalearn-input2"
@@ -33,18 +33,20 @@ def copy_files():
         if dt == rgb:
             target = "chalearn_data/data"
             replace = "M_"
+            print("RGB:")
         else:
             target = "chalearn_data"
             replace = "K_"
+            print("Depth:")
 
-        # Iterate over desired subdirs and move first 1/10 dirs to new dir.
+        # Iterate over desired subdirs and move first 1/5 dirs to new dir.
         # Rename target dir after copying to merge in the end.
         for d in os.listdir(dt):
             if d == "valid":
                 continue
             elif d == "train":
                 for sd in tqdm(os.listdir(f"{dt}/{d}")):
-                    for ssd in os.listdir(f"{dt}/{d}/{sd}")[:10]:
+                    for ssd in os.listdir(f"{dt}/{d}/{sd}")[:5]:
                         target_dir = f"{target}/{d}/{sd}/{ssd}"
                         target_renamed = target_dir.replace(replace, "")
 
@@ -69,7 +71,7 @@ def copy_files():
                         if os.path.exists(target_dir):
                             os.rename(target_dir, target_renamed)
 
-    print("Finished moving files!")
+    return "Finished copying files!"
 
 
 # Resize and save depth image JPEGs as 1-channel PNGs.
@@ -79,15 +81,21 @@ def depth_to_png():
         path = "/".join(item.replace("\\", "/").split("/")[:-1])
         name = item.replace("\\", "/").split("/")[-1:][0][:-4]
         img = cv2.imread(item)[:, :, 1]
+
+        # Check if image already has desired shape.
         if img.shape[1] == 640:
             continue
-        img = cv2.resize(img, (640, 480))
+        else:
+            img = cv2.resize(img, (640, 480))
+
+        # Clip to range 10-255
+        img = np.clip(img, 10, 255)
 
         # Save as PNG and remove JPG.
         cv2.imwrite(f"{path}/{name}.png", img)
         os.remove(item)
 
-    print("Finished resizing and saving images!")
+    return "Finished resizing and saving images!"
 
 
 # Create CSV files analogous to those in the NYU dataset.
@@ -106,25 +114,24 @@ def create_csvs():
         depth = glob(f"chalearn_data/data/{data_set}/*/*/*.png")
 
         # Create joint set while removing topmost directory from strings.
-        joint = set()
+        joint = []
         for x, y in zip(rgb, depth):
-            joint.add((x.replace("\\", "/").replace("chalearn_data/", ""),
-                       y.replace("\\", "/").replace("chalearn_data/", "")))
+            joint.append((x.replace("\\", "/").replace("chalearn_data/", ""),
+                          y.replace("\\", "/").replace("chalearn_data/", "")))
 
         # Write to CSV file.
         with open(f"chalearn_data/data/chalearn_{data_set}.csv", "w", newline="") as f:
             for item in joint:
                 csv.writer(f).writerow(item)
 
-    print("Finished creating CSV files!")
+    return "Finished creating CSV files!"
 
 
 if __name__ == "__main__":
     copy = True
     convert = True
-    move = False
+    move = True
     create = True
-    zip_dir = True
 
     if os.path.exists("chalearn_data.zip"):
         print("Zip already present, aborting...")
@@ -144,9 +151,5 @@ if __name__ == "__main__":
     if create:
         print(create_csvs())
 
-    if zip_dir:
-        print("Zipping folder...")
-        shutil.make_archive(base_dir="chalearn_data/data", base_name="chalearn_data", format="zip")
-        print("Finished zipping folder!")
-
-    print("All done!!!")
+    print("Please zip the 'chalearn_data/data' folder, so the content is './data/...', "
+          "rename the .zip to 'chalearn_data' and place it in the root folder!")

@@ -3,8 +3,9 @@ from PIL import Image
 
 
 def DepthNorm(x, maxDepth):
-    # JW: Avoid division by 0 error
-    x[x == 0] = 1e4
+    # JW: Avoid division by 0 error (minDepth = 10)
+    # x[x < 10] = 10 1e5
+    # EDIT: Previously clip depth input to (minDepth = 10), 255 range
     return maxDepth / x
 
 

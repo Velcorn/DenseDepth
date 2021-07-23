@@ -61,10 +61,10 @@ def get_nyu_callbacks(model, train_generator, test_generator, test_set, runPath)
                     gt_train = plasma(y_train[:, :, 0])[:, :, :3]
                     gt_test = plasma(y_test[:, :, 0])[:, :, :3]
 
-                    predict_train = plasma(predict(model, x_train, minDepth=minDepth, maxDepth=maxDepth)[0, :, :, 0])[:,
-                                    :, :3]
-                    predict_test = plasma(predict(model, x_test, minDepth=minDepth, maxDepth=maxDepth)[0, :, :, 0])[:,
-                                   :, :3]
+                    predict_train = plasma(predict(model, x_train, minDepth=minDepth,
+                                                   maxDepth=maxDepth)[0, :, :, 0])[:, :, :3]
+                    predict_test = plasma(predict(model, x_test, minDepth=minDepth,
+                                                  maxDepth=maxDepth)[0, :, :, 0])[:, :, :3]
 
                     train_samples.append(np.vstack([rgb_train, gt_train, predict_train]))
                     test_samples.append(np.vstack([rgb_test, gt_test, predict_test]))
@@ -92,9 +92,10 @@ def get_nyu_callbacks(model, train_generator, test_generator, test_set, runPath)
     callbacks.append(lr_schedule)  # reduce learning rate when stuck
 
     # Callback: save checkpoints
-    # JW: Updated period=5 to save_freq=5*batch_size (nyu=12762, chalearn=15280).
+    # JW: Updated period=5 to save_freq=5*batch_size (nyu=12762, chalearn_5=15280, chalearn_249=12450).
+    batch_size = 12450
     callbacks.append(keras.callbacks.ModelCheckpoint(
-        runPath + '/weights.{epoch:02d}.hdf5', monitor='val_loss', verbose=2, save_best_only=False,
-        save_weights_only=False, mode='min', save_freq=5*15280))
+        runPath + '/weights.{epoch:02d}.hdf5', monitor='val_loss', verbose=1, save_best_only=False,
+        save_weights_only=False, mode='min', save_freq=5*batch_size))
 
     return callbacks
