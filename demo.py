@@ -56,8 +56,8 @@ def toc(): print('{0} seconds.'.format(time.time() - ticTime))
 
 # Conversion from Numpy to QImage and back
 def np_to_qimage(a):
-    im = a.copy()
-    return QtGui.QImage(im.data, im.shape[1], im.shape[0], im.strides[0], QtGui.QImage.Format_RGB888).copy()
+    im = a.extract()
+    return QtGui.QImage(im.data, im.shape[1], im.shape[0], im.strides[0], QtGui.QImage.Format_RGB888).extract()
     
 def qimage_to_np(img):
     img = img.convertToFormat(QtGui.QImage.Format.Format_ARGB32)
@@ -169,7 +169,7 @@ class Window(QtWidgets.QWidget):
         img = QtGui.QImage(filename).scaledToHeight(rgb_height)
         xstart = 0
         if img.width() > rgb_width: xstart = (img.width() - rgb_width) // 2
-        img = img.copy(xstart, 0, xstart+rgb_width, rgb_height)
+        img = img.extract(xstart, 0, xstart + rgb_width, rgb_height)
         self.inputViewer.setPixmap(QtGui.QPixmap.fromImage(img))
         self.updateCloud()
 
@@ -356,7 +356,7 @@ class GLWidget(QtOpenGL.QGLWidget):
         width, height = self.depth.shape[1], self.depth.shape[0]
 
         # Reshape
-        points = self.posFromDepth(self.depth.copy())
+        points = self.posFromDepth(self.depth.extract())
         colors = resize(self.rgb, (height, width)).reshape((height * width, 3))
 
         # Flatten and convert to float32

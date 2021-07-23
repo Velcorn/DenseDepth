@@ -133,10 +133,6 @@ if __name__ == "__main__":
     move = True
     create = True
 
-    if os.path.exists("chalearn_data.zip"):
-        print("Zip already present, aborting...")
-        sys.exit()
-
     if copy:
         print(copy_files())
 
@@ -144,12 +140,12 @@ if __name__ == "__main__":
         print(depth_to_png())
 
     if move:
-        print("Please move 'test' and 'train' folders from 'chalearn_data' into 'chalearn_data/data' to merge! "
-              "Afterwards, simply set 'move' to 'False' and proceed!")
+        print('Please move "test" and "train" folders from "chalearn_data" into "chalearn_data/data" to merge! '
+              'Afterwards, simply set "move" to "False" and proceed!')
         sys.exit()
 
     if create:
         print(create_csvs())
 
-    print("Please zip the 'chalearn_data/data' folder, so the content is './data/...', "
-          "rename the .zip to 'chalearn_data' and place it in the root folder!")
+    print('Please zip the "chalearn_data/data" folder, so the content is "./data/...", '
+          'rename the ZIP file to "chalearn_data" and place it in the root folder!')

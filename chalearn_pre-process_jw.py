@@ -29,7 +29,7 @@ for gpu in tf.config.list_physical_devices('GPU'):
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
-parser.add_argument("--model", default="chalearn_249.h5", type=str, help="Trained Keras model file.")
+parser.add_argument("--model", default="autsl.h5", type=str, help="Trained Keras model file.")
 parser.add_argument("--input", default="chalearn-input", type=str, help="Input folder.")
 parser.add_argument("--output", default="chalearn-output", type=str,
                     help="Output folder.")
@@ -105,7 +105,7 @@ def estimate_depth():
         outputs = predict(model, inputs)
 
         # Save depth estimation to output folder
-        for j, item in enumerate(outputs.copy()):
+        for j, item in enumerate(outputs.extract()):
             # Get path to image and name
             path = "/".join(names[j].replace(args.input, args.output).split("/")[:-1])
             name = names[j].split("/")[4:][0][:-4]
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     resize = False
     estimate = True
     normalize = True
-    remove = False
+    remove = True
     clean = True
 
     if resize:

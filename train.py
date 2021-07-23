@@ -10,7 +10,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 from loss import depth_loss_function
 from utils import load_test_data
 from model import create_model
-from data import get_nyu_train_test_data, get_unreal_train_test_data, get_chalearn_train_test_data
+from data import get_nyu_train_test_data, get_unreal_train_test_data, \
+    get_chalearn_train_test_data, get_autsl_train_test_data
 from callbacks import get_nyu_callbacks
 from keras.optimizers import Adam
 
@@ -25,15 +26,15 @@ for gpu in tf.config.experimental.list_physical_devices('GPU'):
 
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
-parser.add_argument('--data', default='chalearn', type=str, help='Training dataset.')  # was default='nyu'
+parser.add_argument('--data', default='autsl', type=str, help='Training dataset.')  # was default='nyu'
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')  # was default=0.0001
 parser.add_argument('--bs', type=int, default=4, help='Batch size')  # was default=4
-parser.add_argument('--epochs', type=int, default=20, help='Number of epochs')  # was default=20
+parser.add_argument('--epochs', type=int, default=1, help='Number of epochs')  # was default=20
 parser.add_argument('--gpus', type=int, default=1, help='The number of GPUs to use')
 parser.add_argument('--gpuids', type=str, default='0', help='IDs of GPUs to use')
 parser.add_argument('--mindepth', type=float, default=10.0, help='Minimum of input depths')
 parser.add_argument('--maxdepth', type=float, default=1000.0, help='Maximum of input depths')
-parser.add_argument('--name', type=str, default='densedepth_chalearn', help='A name to attach to the training session')
+parser.add_argument('--name', type=str, default='densedepth_autsl', help='A name to attach to the training session')
 # JW: default='densedepth_nyu'
 parser.add_argument('--checkpoint', type=str, default='', help='Start training from an existing model.')
 parser.add_argument('--full', dest='full', action='store_true',
@@ -58,6 +59,8 @@ elif args.data == 'unreal':
     train_generator, test_generator = get_unreal_train_test_data(args.bs)
 elif args.data == 'chalearn':
     train_generator, test_generator = get_chalearn_train_test_data(args.bs)
+elif args.data == 'autsl':
+    train_generator, test_generator = get_autsl_train_test_data(args.bs)
 else:
     print("Wrong dataset selected, check your arguments for typos!")
     sys.exit()
@@ -116,6 +119,9 @@ if args.data == 'unreal':
     callbacks = get_nyu_callbacks(model, train_generator, test_generator,
                                   load_test_data() if args.full else None, runPath)
 if args.data == 'chalearn':
+    callbacks = get_nyu_callbacks(model, train_generator, test_generator,
+                                  load_test_data() if args.full else None, runPath)
+if args.data == 'autsl':
     callbacks = get_nyu_callbacks(model, train_generator, test_generator,
                                   load_test_data() if args.full else None, runPath)
 

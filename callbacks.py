@@ -92,7 +92,7 @@ def get_nyu_callbacks(model, train_generator, test_generator, test_set, runPath)
     callbacks.append(lr_schedule)  # reduce learning rate when stuck
 
     # Callback: save checkpoints
-    # JW: Updated period=5 to save_freq=5*batch_size (nyu=12762, chalearn_5=15280, chalearn_249=12450).
+    # JW: Updated period=5 to save_freq=5*batch_size (nyu=12762, chalearn_249=12450, AUTSL=).
     batch_size = 12450
     callbacks.append(keras.callbacks.ModelCheckpoint(
         runPath + '/weights.{epoch:02d}.hdf5', monitor='val_loss', verbose=1, save_best_only=False,
