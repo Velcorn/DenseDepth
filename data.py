@@ -263,7 +263,7 @@ def get_chalearn_train_test_data(batch_size):
 
 def autsl_resize(img, resolution=384):  # JW: Removed unused padding=6 parameter
     from skimage.transform import resize
-    return resize(img, (resolution, int(resolution * 4 / 3)), preserve_range=True, mode='reflect', anti_aliasing=True)
+    return resize(img, (resolution, resolution), preserve_range=True, mode='reflect', anti_aliasing=True)
 
 
 class AUTSL_BasicAugmentRGBSequence(Sequence):
@@ -297,13 +297,13 @@ class AUTSL_BasicAugmentRGBSequence(Sequence):
             sample = self.dataset[index]
 
             x = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[0].replace("\r", "")]))).
-                        reshape(512, 512, 3) / 255, 0, 1)
+                        reshape(384, 384, 3) / 255, 0, 1)
             y = np.clip(np.asarray(Image.open(BytesIO(self.data[sample[1].replace("\r", "")]))).
-                        reshape(512, 512, 1) / 255 * self.maxDepth, 0, self.maxDepth)
+                        reshape(192, 192, 1) / 255 * self.maxDepth, 0, self.maxDepth)
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = autsl_resize(x, 384)
-            batch_y[i] = autsl_resize(y, 384)
+            batch_y[i] = autsl_resize(y, 192)
 
             if is_apply_policy:
                 batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
@@ -336,13 +336,13 @@ class AUTSL_BasicRGBSequence(Sequence):
             sample = self.dataset[index]
 
             x = np.clip(np.asarray(
-                Image.open(BytesIO(self.data[sample[0].replace("\r", "")]))).reshape(512, 512, 3) / 255, 0, 1)
+                Image.open(BytesIO(self.data[sample[0].replace("\r", "")]))).reshape(384, 384, 3) / 255, 0, 1)
             y = np.asarray(Image.open(BytesIO(self.data[sample[1].replace("\r", "")])),
-                           dtype=np.float32).reshape(512, 512, 1).extract().astype(float) / 10.0
+                           dtype=np.float32).reshape(192, 192, 1).copy().astype(float) / 10.0
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = autsl_resize(x, 384)
-            batch_y[i] = autsl_resize(y, 512)
+            batch_y[i] = autsl_resize(y, 192)
 
             # DEBUG:
             # self.policy.debug_img(batch_x[i], np.clip(DepthNorm(batch_y[i])/maxDepth,0,1), idx, i)
@@ -359,8 +359,8 @@ def get_autsl_data(batch_size, autsl_data_zipfile='autsl_data.zip'):
     autsl_test = list(
         (row.split(',') for row in (data['data/autsl_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
 
-    shape_rgb = (batch_size, 512, 512, 3)
-    shape_depth = (batch_size, 512, 512, 1)
+    shape_rgb = (batch_size, 384, 384, 3)
+    shape_depth = (batch_size, 192, 192, 1)
 
     # Helpful for testing...
     '''nyu2_train = nyu2_train[:10]
@@ -373,8 +373,8 @@ def get_autsl_train_test_data(batch_size):
     data, autsl_train, autsl_test, shape_rgb, shape_depth = get_autsl_data(batch_size)
 
     train_generator = AUTSL_BasicAugmentRGBSequence(data, autsl_train, batch_size=batch_size, shape_rgb=shape_rgb,
-                                                  shape_depth=shape_depth)
+                                                    shape_depth=shape_depth)
     test_generator = AUTSL_BasicRGBSequence(data, autsl_test, batch_size=batch_size, shape_rgb=shape_rgb,
-                                          shape_depth=shape_depth)
+                                            shape_depth=shape_depth)
 
     return train_generator, test_generator

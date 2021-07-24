@@ -100,6 +100,8 @@ def depth_to_png():
 
 # Create CSV files analogous to those in the NYU dataset.
 def create_csvs():
+    print("Creating CSV files...")
+
     for data_set in ["train", "test"]:
         # Remove CSV file if it already exists.
         try:
