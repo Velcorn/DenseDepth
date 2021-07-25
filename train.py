@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estim
 parser.add_argument('--data', default='autsl', type=str, help='Training dataset.')  # was default='nyu'
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')  # was default=0.0001
 parser.add_argument('--bs', type=int, default=4, help='Batch size')  # was default=4
-parser.add_argument('--epochs', type=int, default=1, help='Number of epochs')  # was default=20
+parser.add_argument('--epochs', type=int, default=20, help='Number of epochs')  # was default=20
 parser.add_argument('--gpus', type=int, default=1, help='The number of GPUs to use')
 parser.add_argument('--gpuids', type=str, default='0', help='IDs of GPUs to use')
 parser.add_argument('--mindepth', type=float, default=10.0, help='Minimum of input depths')
