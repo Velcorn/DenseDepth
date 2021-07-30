@@ -105,7 +105,7 @@ def estimate_depth():
         outputs = predict(model, inputs)
 
         # Save depth estimation to output folder
-        for j, item in enumerate(outputs.extract()):
+        for j, item in enumerate(outputs.copy()):
             # Get path to image and name
             path = "/".join(names[j].replace(args.input, args.output).split("/")[:-1])
             name = names[j].split("/")[4:][0][:-4]
