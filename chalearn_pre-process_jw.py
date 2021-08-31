@@ -29,7 +29,7 @@ for gpu in tf.config.list_physical_devices('GPU'):
 
 # Argument Parser
 parser = argparse.ArgumentParser(description="High Quality Monocular Depth Estimation via Transfer Learning")
-parser.add_argument("--model", default="autsl.h5", type=str, help="Trained Keras model file.")
+parser.add_argument("--model", default="chalearn_249.h5", type=str, help="Trained Keras model file.")
 parser.add_argument("--input", default="chalearn-input", type=str, help="Input folder.")
 parser.add_argument("--output", default="chalearn-output", type=str,
                     help="Output folder.")
